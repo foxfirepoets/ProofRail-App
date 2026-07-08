@@ -1,0 +1,140 @@
+Account Number,Account Name,Type,Detail Type,Description
+10000,IC Clearing,Bank,Checking,Cross-class JE balancer - MUST net to zero per class
+10100,Operating Cash,Bank,Checking,Parent - one sub per entity
+10101,Operating Cash:12SB,Bank,Checking,12SB Hunters Landing operating
+10102,Operating Cash:HLN,Bank,Checking,HLN operating (post-fraud acct ...48560)
+10103,Operating Cash:Union,Bank,Checking,Union Station / Union Walk operating
+10104,Operating Cash:Madison,Bank,Checking,Madison Park operating
+10105,Operating Cash:Quincy,Bank,Checking,Quincy Partners operating
+10106,Operating Cash:Vic,Bank,Checking,Vic Partners operating
+10107,Operating Cash:Summa Elite,Bank,Checking,Summa Elite LLC (754-unit Gainesville TX project) operating
+10108,Operating Cash:Ventura,Bank,Checking,Ventura Landing operating
+10109,Operating Cash:Freeman,Bank,Checking,Freeman Ranch operating
+10110,Operating Cash:Carlo,Bank,Checking,Carlo @ Washington operating (PM Cornerstone)
+10111,Operating Cash:Ledges,Bank,Checking,Ledges at Moab operating
+10112,Operating Cash:RM Texas,Bank,Checking,RM Texas Partners operating
+10113,Operating Cash:Elephant Rock,Bank,Checking,Elephant Rock (MO) operating
+10114,Operating Cash:EJH,Bank,Checking,EJH Development operating
+10115,Operating Cash:Dominus,Bank,Checking,Dominus (QB legacy name: Dominus Data LLC) operating
+10116,Operating Cash:Rock Creek Acq,Bank,Checking,Rock Creek Acquisitions LLC (TX land entity - SEPARATE from Summa Elite)
+10117,Operating Cash:Camden,Bank,Checking,Camden Crossing operating
+10118,Operating Cash:Ensign,Bank,Checking,Ensign (sold - wind-down/final K-1 posture)
+10200,Draw Funding,Bank,Checking,Parent - draw proceeds land here (draw-booked entities only)
+10201,Draw Funding:12SB,Bank,Checking,12SB construction draws (gross - not cash)
+10203,Draw Funding:Union,Bank,Checking,Union construction draws (gross - not cash)
+10204,Draw Funding:Madison,Bank,Checking,Madison Arixa draws (fund control Phoenix Tide)
+10207,Draw Funding:Summa Elite,Bank,Checking,Summa Elite / Rock Creek draws
+10300,Reserves & Escrow,Bank,Checking,Add sub per entity only as needed
+10500,Credit Card Clearing,Credit Card,Credit Card,Card activity - class every line
+12500,Due From Corp,Other Current Assets,Other Current Assets,"Parent - IC asset leg, one sub per entity"
+12501,Due From Corp:12SB,Other Current Assets,Other Current Assets,12SB receivable from corporate family
+12502,Due From Corp:HLN,Other Current Assets,Other Current Assets,HLN receivable from corporate family
+12503,Due From Corp:Union,Other Current Assets,Other Current Assets,Union receivable from corporate family
+12504,Due From Corp:Madison,Other Current Assets,Other Current Assets,Madison receivable from corporate family
+12505,Due From Corp:Quincy,Other Current Assets,Other Current Assets,Quincy receivable from corporate family
+12506,Due From Corp:Vic,Other Current Assets,Other Current Assets,Vic receivable from corporate family
+12507,Due From Corp:Summa Elite,Other Current Assets,Other Current Assets,Summa Elite receivable from corporate family
+12508,Due From Corp:Ventura,Other Current Assets,Other Current Assets,Ventura receivable from corporate family
+12509,Due From Corp:Freeman,Other Current Assets,Other Current Assets,Freeman receivable from corporate family
+12510,Due From Corp:Carlo,Other Current Assets,Other Current Assets,Carlo receivable from corporate family
+12511,Due From Corp:Ledges,Other Current Assets,Other Current Assets,Ledges receivable from corporate family
+12512,Due From Corp:RM Texas,Other Current Assets,Other Current Assets,RM Texas receivable from corporate family
+12513,Due From Corp:Elephant Rock,Other Current Assets,Other Current Assets,Elephant Rock receivable from corporate family
+12514,Due From Corp:EJH,Other Current Assets,Other Current Assets,EJH receivable from corporate family
+12515,Due From Corp:Dominus,Other Current Assets,Other Current Assets,Dominus receivable from corporate family
+12516,Due From Corp:Rock Creek Acq,Other Current Assets,Other Current Assets,Rock Creek Acq receivable from corporate family
+12517,Due From Corp:Camden,Other Current Assets,Other Current Assets,Camden receivable from corporate family
+12518,Due From Corp:Ensign,Other Current Assets,Other Current Assets,Ensign receivable from corporate family
+15100,CIP - Land & Acquisition,Other Current Assets,Other Current Assets,Land + acquisition (Items carry detail)
+15200,CIP - Soft Costs,Other Current Assets,Other Current Assets,"Supervision, GC, inspections, temp facilities"
+15300,CIP - Hard Costs,Other Current Assets,Other Current Assets,"Site, concrete, framing, MEP, finishes"
+15400,CIP - Financing Costs,Other Current Assets,Other Current Assets,"Interest, loan fees, carry"
+15500,CIP - Dev Fee Capitalized,Other Current Assets,Other Current Assets,5% fee if CPA capitalizes - NEVER for 12SB / Summa Elite
+17100,Completed Real Estate,Fixed Assets,Other fixed assets,When CIP is placed in service
+17900,Accumulated Depreciation,Fixed Assets,Accumulated Depreciation,If held for rental
+20200,GC Retainage Payable,Other Current Liabilities,Other Current Liabilities,Holdback withheld from vendors
+20300,Accrued Expenses,Other Current Liabilities,Other Current Liabilities,Period-end accruals
+22000,Construction Loans,Long Term Liabilities,Notes Payable,Parent - one sub per entity+lender
+22001,Construction Loans:12SB CanyonView,Long Term Liabilities,Notes Payable,12SB - Canyon View CU
+22002,Construction Loans:HLN Arixa,Long Term Liabilities,Notes Payable,HLN - Arixa bridge ($317K plug lives here labeled - do NOT clear)
+22012,Construction Loans:HLN Seller Fin,Long Term Liabilities,Notes Payable,HLN - Providence/Keyes/Long Shot seller financing
+22003,Construction Loans:Union Granite LN86,Long Term Liabilities,Notes Payable,Union - Granite CU LN86 via Alloya
+22004,Construction Loans:Madison Arixa,Long Term Liabilities,Notes Payable,Madison Park - Arixa
+22005,Construction Loans:Quincy FirstState,Long Term Liabilities,Notes Payable,Quincy - First State Bank
+22006,Construction Loans:Vic Copa,Long Term Liabilities,Notes Payable,Vic - Copa Capital Loan 3791 (payoff in progress)
+22007,Construction Loans:SummaElite MM,Long Term Liabilities,Notes Payable,Summa Elite / Rock Creek lender
+22008,Construction Loans:Ventura Trevian,Long Term Liabilities,Notes Payable,Ventura - Trevian/ReSpark
+22009,Construction Loans:Freeman Arixa,Long Term Liabilities,Notes Payable,Freeman Ranch - Arixa
+22010,Construction Loans:Carlo InterCap,Long Term Liabilities,Notes Payable,Carlo @ Washington - InterCap Lending
+22500,Due To Corp,Other Current Liabilities,Other Current Liabilities,"Parent - IC liability leg, one sub per entity"
+22501,Due To Corp:12SB,Other Current Liabilities,Other Current Liabilities,12SB owes corporate family
+22502,Due To Corp:HLN,Other Current Liabilities,Other Current Liabilities,HLN owes corporate family
+22503,Due To Corp:Union,Other Current Liabilities,Other Current Liabilities,Union owes corporate family
+22504,Due To Corp:Madison,Other Current Liabilities,Other Current Liabilities,Madison owes corporate family
+22505,Due To Corp:Quincy,Other Current Liabilities,Other Current Liabilities,Quincy owes corporate family
+22506,Due To Corp:Vic,Other Current Liabilities,Other Current Liabilities,Vic owes corporate family
+22507,Due To Corp:Summa Elite,Other Current Liabilities,Other Current Liabilities,Summa Elite owes corporate family
+22508,Due To Corp:Ventura,Other Current Liabilities,Other Current Liabilities,Ventura owes corporate family
+22509,Due To Corp:Freeman,Other Current Liabilities,Other Current Liabilities,Freeman owes corporate family
+22510,Due To Corp:Carlo,Other Current Liabilities,Other Current Liabilities,Carlo owes corporate family
+22511,Due To Corp:Ledges,Other Current Liabilities,Other Current Liabilities,Ledges owes corporate family
+22512,Due To Corp:RM Texas,Other Current Liabilities,Other Current Liabilities,RM Texas owes corporate family
+22513,Due To Corp:Elephant Rock,Other Current Liabilities,Other Current Liabilities,Elephant Rock owes corporate family
+22514,Due To Corp:EJH,Other Current Liabilities,Other Current Liabilities,EJH owes corporate family
+22515,Due To Corp:Dominus,Other Current Liabilities,Other Current Liabilities,Dominus owes corporate family
+22516,Due To Corp:Rock Creek Acq,Other Current Liabilities,Other Current Liabilities,Rock Creek Acq owes corporate family
+22517,Due To Corp:Camden,Other Current Liabilities,Other Current Liabilities,Camden owes corporate family
+22518,Due To Corp:Ensign,Other Current Liabilities,Other Current Liabilities,Ensign owes corporate family
+23000,Draw Liability / Unearned Draw,Other Current Liabilities,Other Current Liabilities,Draws received not yet costed
+30100,Partner Capital,Equity,Partner's Equity,Parent - subs per entity per OAEA allocation map
+30101,Partner Capital:12SB-Lykos,Equity,Partner's Equity,12SB capital - Lykos Acquisitions
+30111,Partner Capital:12SB-Aubrey,Equity,Partner's Equity,12SB capital - Aubrey
+30102,Partner Capital:HLN-Providence,Equity,Partner's Equity,HLN capital - Providence Partners
+30103,Partner Capital:Union-Lazarus,Equity,Partner's Equity,Union capital - Lazarus Investments
+30113,Partner Capital:Union-STV,Equity,Partner's Equity,Union capital - Summa Terra Ventures LLC
+30123,Partner Capital:Union-Outside,Equity,Partner's Equity,Union capital - outside partner (Nick)
+30104,Partner Capital:Madison-Lykos,Equity,Partner's Equity,Madison capital - Lykos
+30114,Partner Capital:Madison-AW1,Equity,Partner's Equity,Madison - AW1 1% per 7-2-26 OAEA
+30124,Partner Capital:Madison-Lazarus,Equity,Partner's Equity,Madison - Lazarus 4.07% per 7-2-26 OAEA
+30134,Partner Capital:Madison-Outside,Equity,Partner's Equity,Madison - 8 outside lines per Exhibit A (Lykos 73.55% = Executive)
+30105,Partner Capital:Quincy-STDG,Equity,Partner's Equity,Quincy capital - STDG
+30115,Partner Capital:Quincy-Lazarus,Equity,Partner's Equity,Quincy capital - Lazarus
+30125,Partner Capital:Quincy-Outside,Equity,Partner's Equity,Quincy capital - Adam Lee / Greg Guymon
+30106,Partner Capital:Vic-Exult,Equity,Partner's Equity,Vic capital - Exult Assets
+30116,Partner Capital:Vic-Orion,Equity,Partner's Equity,Vic capital - Orion Investing
+30126,Partner Capital:Vic-Charis,Equity,Partner's Equity,Vic capital - Charis Acquisitions
+30107,Partner Capital:SummaElite-Providence,Equity,Partner's Equity,Summa Elite - Providence 42.165% (Executive Member per 7-2-26 OAEA)
+30117,Partner Capital:SummaElite-STV,Equity,Partner's Equity,Summa Elite - STV LLC 1.039% per 7-2-26 OAEA
+30127,Partner Capital:SummaElite-ElephRock,Equity,Partner's Equity,Summa Elite - Elephant Rock LLC 1.615% (INTERCOMPANY equity)
+30137,Partner Capital:SummaElite-Outside,Equity,Partner's Equity,Summa Elite - DM Capital 42.165% + ~35 outside lines per Exhibit A
+30108,Partner Capital:Ventura-STDG,Equity,Partner's Equity,Ventura capital - STDG
+30109,Partner Capital:Freeman-Providence,Equity,Partner's Equity,Freeman capital - Providence
+30130,Partner Capital:Carlo-AW1,Equity,Partner's Equity,Carlo - AW1 50% per OAEA ledger
+30140,Partner Capital:Carlo-Hendricks,Equity,Partner's Equity,Carlo - Erin Hendricks 50%
+30131,Partner Capital:Ledges-Providence,Equity,Partner's Equity,Ledges capital - Providence
+30141,Partner Capital:Ledges-Aubrey,Equity,Partner's Equity,Ledges capital - Aubrey (12% direct)
+30132,Partner Capital:RMTexas-Lazarus,Equity,Partner's Equity,RM Texas capital - Lazarus
+30142,Partner Capital:RMTexas-Aubrey,Equity,Partner's Equity,RM Texas capital - Aubrey (0.42% direct)
+30133,Partner Capital:ElephantRock-Providence,Equity,Partner's Equity,Elephant Rock capital - Providence
+30134,Partner Capital:EJH-TBD,Equity,Partner's Equity,EJH capital - partners TBD (confirm OA)
+30135,Partner Capital:Dominus-Aubrey,Equity,Partner's Equity,Dominus capital - Aubrey (70% direct)
+30145,Partner Capital:Dominus-Outside,Equity,Partner's Equity,Dominus capital - outside partners (30%)
+30146,Partner Capital:RockCreekAcq-AW1,Equity,Partner's Equity,Rock Creek Acq - AW1 25% (25 votes)
+30156,Partner Capital:RockCreekAcq-Outside,Equity,Partner's Equity,Rock Creek Acq - QC Denton 50% + DWM Holdings 25%
+30147,Partner Capital:Camden-Lazarus,Equity,Partner's Equity,Camden Crossing - Lazarus line per ledger
+30157,Partner Capital:Camden-Outside,Equity,Partner's Equity,Camden Crossing - outside per Exhibit A
+30148,Partner Capital:Ensign-Lazarus,Equity,Partner's Equity,"Ensign - Lazarus $924,890.12 per ledger - verify Exhibit A"
+30158,Partner Capital:Ensign-Outside,Equity,Partner's Equity,Ensign - outside per 7-2-26 Exhibit A
+30300,Distributions,Equity,Partner Distributions,Capital out - class = entity
+40100,Sale Proceeds,Income,Service/Fee Income,Lot/unit/property sales
+40900,Other / Rental Income,Income,Service/Fee Income,Interim rental
+50100,Cost of Real Estate Sold,Cost of Goods Sold,Other Costs of Services - COS,CIP relieved at sale
+50200,Closing Costs - Sale,Cost of Goods Sold,Other Costs of Services - COS,Selling costs / sale commissions
+60100,Developer Fee Expense,Expenses,Other Miscellaneous Service Cost,5% if expensed not capitalized - never 12SB / Summa Elite
+70300,Professional Fees (CPA/Legal),Expenses,Other Miscellaneous Service Cost,Outside services
+70400,Insurance,Expenses,Other Miscellaneous Service Cost,Class to owning entity
+70500,Property Taxes,Expenses,Other Miscellaneous Service Cost,Carry cost
+70600,Interest Expense,Expenses,Other Miscellaneous Service Cost,Loan interest (if expensed)
+70700,Marketing,Expenses,Other Miscellaneous Service Cost,Project marketing
+29900,OB Suspense - Flagged,Other Current Liabilities,Other Current Liabilities,Opening-balance holes from flagged items - MUST read 0.00 in every class before go-live
+80100,Other Income / Expense,Other Income,Other Miscellaneous Income,Non-operating

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f7f7f5; color: #1a1a1a;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .subtitle { color: #666; font-size: 13px; margin-bottom: 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .card {
+    background: #fff; border: 1px solid #e5e3df; border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .card .label { font-size: 12px; color: #777; text-transform: uppercase; letter-spacing: .04em; }
+  .card .value { font-size: 28px; font-weight: 600; margin-top: 4px; }
+  .card .bar-bg { height: 5px; background: #eee; border-radius: 3px; margin-top: 8px; overflow: hidden; }
+  .card .bar-fill { height: 100%; border-radius: 3px; }
+  section { margin-bottom: 32px; }
+  h2 { font-size: 15px; margin: 0 0 4px; }
+  .section-sub { color: #888; font-size: 12px; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e5e3df; border-radius: 10px; overflow: hidden; }
+  th, td { text-align: left; padding: 9px 14px; font-size: 13px; border-bottom: 1px solid #f0efec; }
+  th { background: #fafaf8; font-weight: 600; color: #555; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; }
+  tr:last-child td { border-bottom: none; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+  .pill.pass { background: #e6f4ea; color: #1e7e34; }
+  .pill.flag { background: #fff4e0; color: #a15c00; }
+  .pill.zero { background: #f1f1ef; color: #999; }
+  .status-card { background: #fff; border: 1px solid #e5e3df; border-radius: 10px; padding: 16px 18px; }
+  .status-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f0efec; font-size: 13px; }
+  .status-row:last-child { border-bottom: none; }
+  .note { font-size: 12px; color: #888; margin-top: 10px; line-height: 1.5; }
+  .loading { color: #999; font-size: 13px; padding: 20px; }
+  .err { color: #b3261e; font-size: 12px; }
+  .static-banner { background: #fff4e0; border: 1px solid #f0d9a8; color: #7a5200; border-radius: 8px; padding: 10px 14px; font-size: 12.5px; margin-bottom: 20px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<h1>ProofRail — Gmail + QBO Automation Dashboard</h1>
+<div class="subtitle">Summa Terra Ventures · live Gmail &amp; Drive pipeline status, static QBO sandbox snapshot</div>
+
+<div class="static-banner">
+  This is a reference copy saved to the project folder. Live, auto-refreshing data only works inside
+  Cowork's artifact view (it calls Cowork's connectors directly from the browser). Opening this file
+  directly will show the last-rendered state, not a live pull. To see live counts, open the
+  "ProofRail — Gmail + QBO Automation Dashboard" artifact from a Cowork chat, or ask Claude in a
+  Cowork session to regenerate this file.
+</div>
+
+<div class="grid" id="summaryCards">
+  <div class="loading">Loading summary…</div>
+</div>
+
+<section>
+  <h2>Gmail — ProofRail labels</h2>
+  <div class="section-sub">Live thread counts per label, queried on load (Cowork artifact view only)</div>
+  <table id="gmailTable">
+    <thead><tr><th>Label</th><th>What it means</th><th style="text-align:right">Threads</th></tr></thead>
+    <tbody><tr><td colspan="3" class="loading">Loading…</td></tr></tbody>
+  </table>
+</section>
+
+<section>
+  <h2>Drive — operating pipeline (00 → 15)</h2>
+  <div class="section-sub">Live file counts per pipeline folder — a file's folder is its status (Cowork artifact view only)</div>
+  <table id="driveTable">
+    <thead><tr><th>Folder</th><th>Purpose</th><th style="text-align:right">Files</th></tr></thead>
+    <tbody><tr><td colspan="3" class="loading">Loading…</td></tr></tbody>
+  </table>
+</section>
+
+<section>
+  <h2>QBO Sandbox — last known status</h2>
+  <div class="section-sub">Static snapshot from the last verify run in chat — not live (see note below)</div>
+  <div class="status-card">
+    <div class="status-row"><span>Realm A — Partnerships Summa Terra Ventures Sandbox</span><span class="pill pass">PASS</span></div>
+    <div class="status-row"><span>Realm B — Parent- Summa Terra Ventures Sandbox</span><span class="pill pass">PASS</span></div>
+    <div class="status-row"><span>Cross-realm bleed check</span><span class="pill pass">NONE</span></div>
+    <div class="status-row"><span>AcctNum mismatches</span><span class="pill flag">1 — Partner Capital:EJH-TBD</span></div>
+    <div class="status-row"><span>Last verified</span><span>2026-07-07 (OAuth reconnect + re-verify)</span></div>
+    <div class="note">
+      QBO sandbox status can't be checked live from this dashboard — it depends on local scripts and secrets in
+      <code>.env</code> that only run inside a Cowork chat session, not a browser-side artifact. To refresh this,
+      ask Claude in chat to re-run <code>python scripts/qbo_verify_setup_counts.py</code>.
+    </div>
+  </div>
+</section>
+
+<div class="note" id="errBox"></div>
+
+<script>
+const GMAIL_LABELS = [
+  ["ProofRail/Invoices", "Vendor invoices in the intake pipeline"],
+  ["ProofRail/Draws", "Draw packages / pay applications"],
+  ["ProofRail/Docs", "General supporting documents"],
+  ["ProofRail/Action", "Needs a human decision — surfaces on Morning Brief"],
+  ["ProofRail/Quarantined", "Failed InvoiceProof — never post"],
+  ["ProofRail/Risk-BankChange", "Bank/routing change — hard stop, phone verify only"],
+  ["ProofRail/Missing-Docs", "Waiting on W-9, COI, lien waiver, etc."],
+  ["ProofRail/W9-Insurance", "Vendor compliance docs"],
+  ["ProofRail/Statements", "Bank/lender statements"],
+  ["ProofRail/Lender", "Lender correspondence, filed to entity's Loans folder"],
+  ["ProofRail/Replied", "Drafted or replied"],
+  ["ProofRail/DoNotPost", "Duplicate / superseded / example — terminal"],
+  ["ProofRail/Processed", "Fully saved + filed + logged — terminal done state"],
+  ["ProofRail/Archive", "Newsletters, tickets, non-actionable mail"],
+  ["ProofRail/Approval", "Matched to a pending intake/draw/fee as approval evidence"],
+  ["ProofRail/ReadyForQBO", "Approval recorded, handoff packet exists"]
+];
+
+const DRIVE_FOLDERS = [
+  ["00_Inbox", "14SEGiUd-_NpP8cgLcVUgaP3A4Fnz6Nii", "Manual drop zone — unclassified"],
+  ["01_Email_Attachments", "1dBhfCrTExAp5S1hv9-CQYHGRkMJChmmP", "Raw attachments saved from Gmail"],
+  ["02_Draw_Packages", "1ChTYreEsGI5DLdLTdnlVKjzUem8Cfgnm", "Draw sheets, pay apps, lien waivers"],
+  ["03_Vendor_Invoices", "1UwLJNRH2WmkXVeXMOAxctqGU-Z1bzACY", "Vendor invoices by entity/month"],
+  ["04_InvoiceProof", "1rMpPIBOdinjomsgMDhzPbZEL5--Xcp0T", "Proof packets + scan results"],
+  ["05_Pending_Approval", "1-cSGL2cI9uqXoehYgjn-68iLDtiQ7Q44", "Awaiting Ben's approval"],
+  ["06_Approved_For_QBO", "1LhLwgAf8VSC9XGuzPc6CxXVMz6wvH2gI", "Approved, not yet posted"],
+  ["07_QBO_Sandbox_Handoff", "19wtcS7BgZ1swWHhd8os2zpY3VMjXgFn1", "Ready-to-run posting commands"],
+  ["08_QBO_Exports", "1YimkB_MtcqqF6wKznzpRNdvmdDz1Kyuc", "Report exports — reference only"],
+  ["09_QBO_Results", "1wmlqVWtL73OlkQr-rRgMU3e_zRb_EOyl", "Posting receipts, QBO IDs"],
+  ["10_Exceptions", "1SLwhzRtryTE9LqRm46iqcQg5HyDd_UIZ", "Blocked — needs a human"],
+  ["11_Audit_Logs", "1RziamFTiRqUoK2Lnz3vxLf_b4HWpILVJ", "Drive mirror of logs/*.jsonl"],
+  ["12_Month_End_Close", "1Mf9C1Md1tj-sVWS56BmgJgKbHuwwl-hi", "Close checklists, rec workbooks"],
+  ["13_Historical_Examples", "17AXLeLl34Ivx55PEpFMEH6vuGHJk5hqQ", "Fixtures — reference only, never post"],
+  ["14_Do_Not_Post", "1xEeENg-NVwR0jyap1EM_0lXSEnolfT58", "Terminal hard stop"],
+  ["15_Setup_Seed_Files", "17_aNOYg18zUOpDQQACkA9NBHJVJv4n6g", "Seed CSVs — setup source of truth"]
+];
+
+const GMAIL_TOOL = "mcp__b9c3941a-4756-4665-aec3-40ed85dfdf05__search_threads";
+const DRIVE_TOOL = "mcp__f9cb23ed-f990-4f02-b855-38134eecbf97__search_files";
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function getLabelCount(name) {
+  try {
+    const r = await window.cowork.callMcpTool(GMAIL_TOOL, { query: `label:"${name}"`, pageSize: 1, view: "THREAD_VIEW_METADATA_ONLY" });
+    const data = r.structuredContent ?? JSON.parse(r.content[0].text);
+    return parseInt(data.resultCountEstimate || "0", 10);
+  } catch (e) { return null; }
+}
+
+async function getFolderCount(folderId) {
+  try {
+    const r = await window.cowork.callMcpTool(DRIVE_TOOL, { query: `parentId = '${folderId}'`, pageSize: 100 });
+    const data = r.structuredContent ?? JSON.parse(r.content[0].text);
+    return (data.files || []).length;
+  } catch (e) { return null; }
+}
+
+function pillClass(n) {
+  if (n === null) return "flag";
+  if (n === 0) return "zero";
+  return "pass";
+}
+
+async function renderGmail() {
+  const counts = await Promise.all(GMAIL_LABELS.map(([name]) => getLabelCount(name)));
+  const tbody = document.querySelector("#gmailTable tbody");
+  tbody.innerHTML = GMAIL_LABELS.map(([name, desc], i) => {
+    const n = counts[i];
+    return `<tr><td><strong>${esc(name)}</strong></td><td>${esc(desc)}</td>
+      <td class="num"><span class="pill ${pillClass(n)}">${n === null ? "err" : n}</span></td></tr>`;
+  }).join("");
+  return counts;
+}
+
+async function renderDrive() {
+  const counts = await Promise.all(DRIVE_FOLDERS.map(([, id]) => getFolderCount(id)));
+  const tbody = document.querySelector("#driveTable tbody");
+  tbody.innerHTML = DRIVE_FOLDERS.map(([name, , desc], i) => {
+    const n = counts[i];
+    return `<tr><td><strong>${esc(name)}</strong></td><td>${esc(desc)}</td>
+      <td class="num"><span class="pill ${pillClass(n)}">${n === null ? "err" : n}</span></td></tr>`;
+  }).join("");
+  return counts;
+}
+
+function renderSummary(gmailCounts, driveCounts) {
+  const totalMail = gmailCounts.filter(n => n !== null).reduce((a, b) => a + b, 0);
+  const actionIdx = GMAIL_LABELS.findIndex(l => l[0] === "ProofRail/Action");
+  const quarantinedIdx = GMAIL_LABELS.findIndex(l => l[0] === "ProofRail/Quarantined");
+  const bankRiskIdx = GMAIL_LABELS.findIndex(l => l[0] === "ProofRail/Risk-BankChange");
+  const totalDriveFiles = driveCounts.filter(n => n !== null).reduce((a, b) => a + b, 0);
+
+  const cards = [
+    { label: "Labeled threads (all ProofRail labels)", value: totalMail, color: "#4a86e8" },
+    { label: "Needs your action", value: gmailCounts[actionIdx] ?? "—", color: "#a15c00" },
+    { label: "Quarantined (never post)", value: gmailCounts[quarantinedIdx] ?? "—", color: "#b3261e" },
+    { label: "Bank-change risk (hard stop)", value: gmailCounts[bankRiskIdx] ?? "—", color: "#b3261e" },
+    { label: "Files in Drive pipeline", value: totalDriveFiles, color: "#1e7e34" },
+  ];
+
+  document.getElementById("summaryCards").innerHTML = cards.map(c => `
+    <div class="card">
+      <div class="label">${esc(c.label)}</div>
+      <div class="value">${esc(c.value)}</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${typeof c.value === 'number' ? Math.min(100, c.value * 10) : 0}%; background:${c.color}"></div></div>
+    </div>
+  `).join("");
+}
+
+async function main() {
+  try {
+    if (!window.cowork || !window.cowork.callMcpTool) {
+      document.getElementById("errBox").innerHTML = `<span class="err">Live data unavailable outside Cowork's artifact view — see banner above.</span>`;
+      document.querySelector("#gmailTable tbody").innerHTML = `<tr><td colspan="3" class="loading">Open the Cowork artifact for live counts.</td></tr>`;
+      document.querySelector("#driveTable tbody").innerHTML = `<tr><td colspan="3" class="loading">Open the Cowork artifact for live counts.</td></tr>`;
+      document.getElementById("summaryCards").innerHTML = "";
+      return;
+    }
+    const [gmailCounts, driveCounts] = await Promise.all([renderGmail(), renderDrive()]);
+    renderSummary(gmailCounts, driveCounts);
+  } catch (e) {
+    document.getElementById("errBox").innerHTML = `<span class="err">Dashboard error: ${esc(e.message || e)}</span>`;
+  }
+}
+
+main();
+</script>
+
+</body>
+</html>

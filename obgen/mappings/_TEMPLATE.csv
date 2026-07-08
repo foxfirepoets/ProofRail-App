@@ -1,0 +1,30 @@
+old_account,old_type,new_account,new_location,new_class_phase,treatment,pct,note
+# obgen mapping template — one file per entity: mappings/{ENTITY}.csv
+# Copy this file, delete comment lines, fill from the entity's extracted TB (cache/{ENTITY}/trial_balance.csv).
+# RULES (enforced by G2):
+#   - Every old account with a nonzero 6/30 balance MUST appear here. Unmapped nonzero = build failure.
+#   - new_location must equal the entity's `location` from entities.yaml, VERBATIM (the QBO Department).
+#   - new_class_phase = the QBO Class = cost PHASE (00/20/40/80/90), or BLANK. Leave blank for
+#     balance-sheet opening lines; set the phase only on cost lines that carry one. NEVER put the
+#     entity here — the entity is new_location.
+#   - treatment semantics:
+#       direct        -> balance lands on new_account in the OB JE
+#       cip_detail    -> EXCLUDED from OB JE line; rebuilt from E4 monthly x (job,item) history JEs;
+#                        any residual (history sum != TB) posts to new_account and is flagged
+#       open_ap       -> EXCLUDED from OB JE; rebuilt as native BILL blocks from E2
+#       open_ar       -> EXCLUDED from OB JE; rebuilt as native INVOICE blocks from E3
+#       capital_split -> split across MULTIPLE rows (same old_account, pct per row, pcts sum to 1.0)
+#       flag          -> do NOT post; route to out/flags.csv for human decision
+#   - pct blank except capital_split rows.
+#   - Mapping to any forbidden_account_pattern = build failure. When unsure: treatment=flag, never guess.
+#
+# ---- worked example (12SB) ----  new_location = "01 12SB Hunters Landing"; phase blank on BS lines
+Checking - Canyon View,BANK,Operating Cash:12SB,01 12SB Hunters Landing,,direct,,
+Loan - Univ. First CU,LTLIAB,Construction Loans:12SB CanyonView,01 12SB Hunters Landing,,direct,,legacy UFirst draws roll into current lender sub
+Development/Improvements,OCASSET,CIP - Hard Costs,01 12SB Hunters Landing,20,cip_detail,,history JEs carry job+item detail; residual here
+Accounts Payable,AP,Accounts Payable,01 12SB Hunters Landing,,open_ap,,rebuilt as bills
+Accounts Receivable,AR,Accounts Receivable,01 12SB Hunters Landing,,open_ar,,rebuilt as invoices
+Retainage Payable,OCLIAB,GC Retainage Payable,01 12SB Hunters Landing,,direct,,
+Members Equity,EQUITY,Partner Capital:12SB-Lykos,01 12SB Hunters Landing,,capital_split,0.9667,per OA - CONFIRM pct
+Members Equity,EQUITY,Partner Capital:12SB-Aubrey,01 12SB Hunters Landing,,capital_split,0.0333,Aubrey 3.33% direct
+Ask My Accountant,OCASSET,,,,flag,,hard rule - never post - human decides

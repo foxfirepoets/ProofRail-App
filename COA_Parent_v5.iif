@@ -1,0 +1,113 @@
+!ACCNT	NAME	ACCNTTYPE	DESC	ACCNUM
+ACCNT	IC Clearing	BANK	Cross-class JE balancer - MUST net to zero per class	10000
+ACCNT	Operating Cash	BANK	Parent - one sub per corporate entity with a real account	10100
+ACCNT	Operating Cash:STVE	BANK	STVE operating (UCCU / MACU manual entry)	10101
+ACCNT	Operating Cash:STDG	BANK	STDG (MACU + Granite = manual entry, no bank feed)	10102
+ACCNT	Operating Cash:HLE	BANK	HLE - Hunters Landing East (internally funded, held for sale)	10103
+ACCNT	Credit Card Clearing	CCARD	Card activity - class every line	10500
+ACCNT	Accounts Receivable	AR	Billings - class every transaction	12100
+ACCNT	Dev Fee Receivable	OCASSET	5% owed by projects - class = 15 STV CM (universal payee per 7-2-26 OAEAs)	12200
+ACCNT	Due From Projects	OCASSET	Parent - IC asset leg, one sub per project entity	12500
+ACCNT	Due From Projects:12SB	OCASSET	Mirror of partnership-file Due To Corp:12SB	12501
+ACCNT	Due From Projects:HLN	OCASSET	Mirror of Due To Corp:HLN	12502
+ACCNT	Due From Projects:Union	OCASSET	Mirror of Due To Corp:Union	12503
+ACCNT	Due From Projects:Madison	OCASSET	Mirror of Due To Corp:Madison	12504
+ACCNT	Due From Projects:Quincy	OCASSET	Mirror of Due To Corp:Quincy	12505
+ACCNT	Due From Projects:Vic	OCASSET	Mirror of Due To Corp:Vic	12506
+ACCNT	Due From Projects:Summa Elite	OCASSET	Mirror of Due To Corp:Summa Elite	12507
+ACCNT	Due From Projects:Ventura	OCASSET	Mirror of Due To Corp:Ventura	12508
+ACCNT	Due From Projects:Freeman	OCASSET	Mirror of Due To Corp:Freeman	12509
+ACCNT	Due From Projects:Carlo	OCASSET	Mirror of Due To Corp:Carlo	12510
+ACCNT	Due From Projects:Ledges	OCASSET	Mirror of Due To Corp:Ledges	12511
+ACCNT	Due From Projects:RM Texas	OCASSET	Mirror of Due To Corp:RM Texas	12512
+ACCNT	Due From Projects:Elephant Rock	OCASSET	Mirror of Due To Corp:Elephant Rock	12513
+ACCNT	Due From Projects:EJH	OCASSET	Mirror of Due To Corp:EJH	12514
+ACCNT	Due From Projects:Dominus	OCASSET	Mirror of Due To Corp:Dominus	12515
+ACCNT	Due From Projects:Rock Creek Acq	OCASSET	Mirror of Due To Corp:Rock Creek Acq	12516
+ACCNT	Due From Projects:Camden	OCASSET	Mirror of Due To Corp:Camden	12517
+ACCNT	Due From Projects:Ensign	OCASSET	Mirror of Due To Corp:Ensign	12518
+ACCNT	Land Held for Sale:HLE	OCASSET	HLE entitlement-stage land - carried at cost until sale	13900
+ACCNT	Investment in Projects	OCASSET	Parent - one sub per HOLDING x PROJECT pair (allocation map)	14000
+ACCNT	Investment in Projects:12SB-Lykos	OCASSET	Lykos stake in 12SB - class 04 Lykos	14001
+ACCNT	Investment in Projects:12SB-Aubrey	OCASSET	Aubrey stake in 12SB	14011
+ACCNT	Investment in Projects:HLN-Providence	OCASSET	Providence stake in HLN - class 05 Providence	14002
+ACCNT	Investment in Projects:Union-Lazarus	OCASSET	Lazarus stake in Union - class 06 Lazarus	14003
+ACCNT	Investment in Projects:Union-STV	OCASSET	STV LLC stake in Union - class 03 STV LLC	14013
+ACCNT	Investment in Projects:Madison-Lykos	OCASSET	Lykos stake in Madison	14004
+ACCNT	Investment in Projects:Madison-AW1	OCASSET	AW1 stake in Madison - class 07 AW1	14014
+ACCNT	Investment in Projects:Quincy-STDG	OCASSET	STDG stake in Quincy - class 02 STDG	14005
+ACCNT	Investment in Projects:Quincy-Lazarus	OCASSET	Lazarus stake in Quincy	14015
+ACCNT	Investment in Projects:Vic-Exult	OCASSET	Exult stake in Vic - class 11 Exult	14006
+ACCNT	Investment in Projects:Vic-Orion	OCASSET	Orion stake in Vic - class 09 Orion	14016
+ACCNT	Investment in Projects:Vic-Charis	OCASSET	Charis stake in Vic - class 10 Charis	14026
+ACCNT	Investment in Projects:SumElite-Providence	OCASSET	Providence 42.165% Executive stake in Summa Elite	14007
+ACCNT	Investment in Projects:SumElite-STV	OCASSET	STV LLC stake in Summa Elite	14017
+ACCNT	Investment in Projects:Ventura-STDG	OCASSET	STDG stake in Ventura	14008
+ACCNT	Investment in Projects:Freeman-Providence	OCASSET	Providence stake in Freeman	14009
+ACCNT	Investment in Projects:Ledges-Providence	OCASSET	Providence stake in Ledges - class 05	14010
+ACCNT	Investment in Projects:Ledges-Aubrey	OCASSET	Aubrey 12% direct stake in Ledges	14020
+ACCNT	Investment in Projects:RMTexas-Lazarus	OCASSET	Lazarus stake in RM Texas - class 06	14012
+ACCNT	Investment in Projects:RMTexas-Aubrey	OCASSET	Aubrey 0.42% direct in RM Texas	14022
+ACCNT	Investment in Projects:ElephRock-Providence	OCASSET	Providence stake in Elephant Rock	14018
+ACCNT	Investment in Projects:Carlo-AW1	OCASSET	AW1 50% stake in Carlo (Erin Hendricks holds other 50% - outside)	14019
+ACCNT	Investment in Projects:EJH-TBD	OCASSET	EJH holder TBD - confirm OA	14029
+ACCNT	Investment in Projects:Dominus-Aubrey	OCASSET	Aubrey 70% direct stake in Dominus	14030
+ACCNT	Investment in Projects:RockCreekAcq-AW1	OCASSET	AW1 25% stake in Rock Creek Acquisitions LLC	14031
+ACCNT	Investment in Projects:SumElite-ElephRock	OCASSET	Elephant Rock LLC 1.615% stake in Summa Elite (IC equity)	14032
+ACCNT	Investment in Projects:Camden-Lazarus	OCASSET	Lazarus stake in Camden Crossing	14033
+ACCNT	Investment in Projects:Ensign-Lazarus	OCASSET	Lazarus stake in Ensign (wind-down - mirror of realm A capital)	14034
+ACCNT	Accounts Payable	AP	Vendor bills - class every line	20100
+ACCNT	Accrued Expenses	OCLIAB	Period-end accruals	20300
+ACCNT	Comm Payable - Watson (2%)	OCLIAB	CEO commission - PARENT ONLY, class 90	21100
+ACCNT	Comm Payable - Christensen (1%)	OCLIAB	President commission - Porter Christensen - class 90	21200
+ACCNT	Due To Projects	OCLIAB	Parent - IC liability leg, one sub per project entity	22500
+ACCNT	Due To Projects:12SB	OCLIAB	Mirror of partnership-file Due From Corp:12SB	22501
+ACCNT	Due To Projects:HLN	OCLIAB	Mirror of Due From Corp:HLN	22502
+ACCNT	Due To Projects:Union	OCLIAB	Mirror of Due From Corp:Union	22503
+ACCNT	Due To Projects:Madison	OCLIAB	Mirror of Due From Corp:Madison	22504
+ACCNT	Due To Projects:Quincy	OCLIAB	Mirror of Due From Corp:Quincy	22505
+ACCNT	Due To Projects:Vic	OCLIAB	Mirror of Due From Corp:Vic	22506
+ACCNT	Due To Projects:Summa Elite	OCLIAB	Mirror of Due From Corp:Summa Elite	22507
+ACCNT	Due To Projects:Ventura	OCLIAB	Mirror of Due From Corp:Ventura	22508
+ACCNT	Due To Projects:Freeman	OCLIAB	Mirror of Due From Corp:Freeman	22509
+ACCNT	Due To Projects:Carlo	OCLIAB	Mirror of Due From Corp:Carlo	22510
+ACCNT	Due To Projects:Ledges	OCLIAB	Mirror of Due From Corp:Ledges	22511
+ACCNT	Due To Projects:RM Texas	OCLIAB	Mirror of Due From Corp:RM Texas	22512
+ACCNT	Due To Projects:Elephant Rock	OCLIAB	Mirror of Due From Corp:Elephant Rock	22513
+ACCNT	Due To Projects:EJH	OCLIAB	Mirror of Due From Corp:EJH	22514
+ACCNT	Due To Projects:Dominus	OCLIAB	Mirror of Due From Corp:Dominus	22515
+ACCNT	Due To Projects:Rock Creek Acq	OCLIAB	Mirror of Due From Corp:Rock Creek Acq	22516
+ACCNT	Due To Projects:Camden	OCLIAB	Mirror of Due From Corp:Camden	22517
+ACCNT	Due To Projects:Ensign	OCLIAB	Mirror of Due From Corp:Ensign	22518
+ACCNT	Member Equity	EQUITY	Parent - one sub per corporate entity (class must match)	30100
+ACCNT	Member Equity:STVE	EQUITY	STV Entitlement Services	30101
+ACCNT	Member Equity:STDG	EQUITY	Summa Terra Development Group	30102
+ACCNT	Member Equity:STV LLC	EQUITY	Summa Terra Ventures LLC	30103
+ACCNT	Member Equity:Lykos	EQUITY	Lykos Acquisitions	30104
+ACCNT	Member Equity:Providence	EQUITY	Providence Partners	30105
+ACCNT	Member Equity:Lazarus	EQUITY	Lazarus Investments	30106
+ACCNT	Member Equity:AW1	EQUITY	AW1 LLC	30107
+ACCNT	Member Equity:AW2	EQUITY	AW2 LLC	30108
+ACCNT	Member Equity:Orion	EQUITY	Orion Investing	30109
+ACCNT	Member Equity:Charis	EQUITY	Charis Acquisitions	30110
+ACCNT	Member Equity:Exult	EQUITY	Exult Assets	30111
+ACCNT	Member Equity:Aubrey Partners	EQUITY	Aubrey Partners LLC (winding down)	30112
+ACCNT	Member Equity:Liberation	EQUITY	Liberation Development (winding down)	30113
+ACCNT	Member Equity:WFW	EQUITY	Wealth Follows Worth (winding down)	30114
+ACCNT	Member Equity:STV CM	EQUITY	STV CM LLC (formed 4-2-2026 - the fee entity)	30115
+ACCNT	Member Equity:HLE	EQUITY	HLE - Hunters Landing East	30116
+ACCNT	Retained Earnings	EQUITY	Accumulated	30900
+ACCNT	Developer Fee Income	INC	5% dev/CM fee - class = 15 STV CM (universal per 7-2-26 OAEAs) - base varies per OAEA	40200
+ACCNT	Draw Fee Income	INC	Flat $1000/draw (Madison practice) - class 15 STV CM	40210
+ACCNT	Accounting Fee Income	INC	$50/hr capped $500/mo per entity per OAEA - class 15 STV CM	40220
+ACCNT	PM Oversight Fee Income	INC	1.0-1.5% of gross operating income post-CO per OAEA - class 15 STV CM	40230
+ACCNT	Management Fee Income	INC	Other mgmt-co income	40300
+ACCNT	Reimbursement Income	INC	Cost reimbursements	40400
+ACCNT	CEO Commission Expense (2%)	EXP	Watson - paid from fee earned - class 90	60200
+ACCNT	Pres Commission Expense (1%)	EXP	Porter Christensen - paid from fee earned - class 90	60300
+ACCNT	Salaries & Wages	EXP	Mgmt-co payroll (allocate by class)	70100
+ACCNT	Office / Software / Rightworks	EXP	G&A	70200
+ACCNT	Professional Fees (CPA/Legal)	EXP	Outside services	70300
+ACCNT	Insurance	EXP	Allocate by class where direct	70400
+ACCNT	Marketing	EXP	Corporate	70700
+ACCNT	Other Income / Expense	EXINC	Non-operating	80100

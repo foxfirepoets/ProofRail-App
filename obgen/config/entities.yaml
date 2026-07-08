@@ -1,0 +1,65 @@
+# obgen entity registry — the ONE place entity truth lives.
+#
+# DIMENSIONAL MODEL (QBO target — corrected 2026-07-06):
+#   location = the QBO **Department (Location)** = the legal entity. These are the 18 Realm-A
+#              Locations from 6_Locations_REALM_A_API_SEED.csv, VERBATIM (must match the seeded
+#              Department string exactly, or BS-by-Location won't group).
+#   QBO **Class** = cost PHASE (00/20/40/80/90), NOT the entity. Phase is set PER LINE by the
+#              mapping CSV's optional `new_class_phase` column — never per entity.
+#   WHY THIS CHANGED: this field used to be `class` and held the entity. Emitting the entity into
+#   QBO's Class dimension would land every entity in a bogus per-entity class and leave
+#   Balance-Sheet-by-Location empty. Entity => location/Department; phase => Class. The emitter
+#   must map location -> DepartmentRef and new_class_phase -> ClassRef (see run.py iif_je).
+#
+# qbw_name must match QODBC `SELECT CompanyName FROM Company` EXACTLY (pre-flight gate).
+#   Values below are BEST-KNOWN CANDIDATES where noted, else FILL_ME. On the VPS, open each
+#   legacy file and run `SELECT CompanyName FROM Company`; correct any mismatch here. The
+#   pre-flight gate HALTS on any mismatch before a byte is trusted, so a wrong candidate is safe.
+
+cutover: "2026-06-30"
+target_files:
+  partnership: "STV Projects Combined"      # new consolidated partnership file CompanyName
+  parent: "Summa Terra Ventures - Corporate"
+
+class_phases:                          # the ONLY valid QBO Class values (cost phases)
+  - "00"
+  - "20"
+  - "40"
+  - "80"
+  - "90"
+
+forbidden_account_patterns:            # G2/G6 — mapping to any of these = build failure
+  - "Ask My Accountant"
+  - "Uncategorized"
+
+preserve_labeled:                      # must exist in output, untouched (G6)
+  - account: "Construction Loans:HLN Arixa"
+    amount: "317137.06"
+    note: "JE#71 plug 10/18/2024 - awaits Arixa settlement stmt - CPA decides"
+
+# location = seeded Realm-A Department (verbatim). qbw_name = exact CompanyName (VPS-verified).
+entities:
+  12SB:         {qbw_name: "12SB, LLC",                   location: "01 12SB Hunters Landing",      fee: none}                    # qbw_name candidate - VERIFY on VPS
+  HLN:          {qbw_name: "Hunter's Landing North, LLC", location: "02 HLN Hunters Landing North", fee: IC - Summa Terra Ventures} # candidate - VERIFY
+  Union:        {qbw_name: "Union Station, LLC",          location: "03 Union Station-Union Walk",  fee: IC - Summa Terra Ventures} # candidate - VERIFY
+  Madison:      {qbw_name: "FILL_ME",                     location: "04 Madison Park",              fee: IC - STDG}
+  Quincy:       {qbw_name: "FILL_ME",                     location: "05 Quincy Partners",           fee: IC - Summa Terra Ventures}
+  Vic:          {qbw_name: "FILL_ME",                     location: "06 Vic Partners",              fee: IC - Summa Terra Ventures}
+  SummaElite:   {qbw_name: "FILL_ME",                     location: "07 Summa Elite",               fee: none}
+  Ventura:      {qbw_name: "FILL_ME",                     location: "08 Ventura Landing",           fee: IC - Summa Terra Ventures}
+  Freeman:      {qbw_name: "FILL_ME",                     location: "09 Freeman Ranch",             fee: IC - Summa Terra Ventures}
+  Carlo:        {qbw_name: "FILL_ME",                     location: "10 Carlo @ Washington",        fee: CONFIRM_OA}
+  Ledges:       {qbw_name: "FILL_ME",                     location: "11 Ledges at Moab",            fee: IC - Lykos}
+  RMTexas:      {qbw_name: "FILL_ME",                     location: "12 RM Texas",                  fee: IC - Summa Terra Ventures}
+  ElephantRock: {qbw_name: "FILL_ME",                     location: "13 Elephant Rock",             fee: IC - Summa Terra Ventures}
+  EJH:          {qbw_name: "FILL_ME",                     location: "14 EJH Development",            fee: CONFIRM_OA}
+  Dominus:      {qbw_name: "Dominus Data, LLC",           location: "15 Dominus",                   fee: CONFIRM_OA}
+  RockCreek:    {qbw_name: "FILL_ME",                     location: "16 Rock Creek Acquisitions",   fee: none}                    # land venture - NO developer fee (per coding-rules)
+  Camden:       {qbw_name: "FILL_ME",                     location: "17 Camden Crossing",           fee: CONFIRM_OA}              # Lazarus line - verify OA before any fee
+  Ensign:       {qbw_name: "FILL_ME",                     location: "18 Ensign (wind-down)",        fee: none}                    # SOLD - wind-down / final-K-1 postings only
+
+# CIP-history extraction: legacy account name(s) holding construction cost, per entity.
+cip_source_accounts:
+  default: ["Development/Improvements"]
+  # override per entity if a legacy file spells it differently, e.g.:
+  # Madison: ["Development/Improvements", "Construction in Progress"]

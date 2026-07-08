@@ -1,0 +1,362 @@
+// ProofRail — Prisma schema v1.2.0
+// Spec: SPEC_proofrail_v1.md §6 + v1.1 §A5 + v1.2 §B2 (Adaptive-parity surface)
+// Law: state machines live HERE as enums + service guards. Cognition (Cowork) can
+// never write a state this schema doesn't permit. Supabase Postgres — NEW project,
+// isolated from SwarmSync (ADP §12 tenant boundary).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ───────────────────────── enums = the physics ─────────────────────────
+
+enum IntakeStatus {
+  RECEIVED
+  PARSED
+  PROOFING
+  PROOF_PASS
+  QUARANTINED       // Invoice-Proof FLAG or proof-service outage (fail closed)
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  SYNCING
+  SYNCED            // QBO bill exists
+  PROOFED           // Verify-API workflow_event recorded
+}
+
+enum Realm {
+  A // partnerships (15 Locations)
+  B // corporate family
+}
+
+enum GateVerdict {
+  GREEN
+  RED // sets money_lock — fee/draw mutations return 423
+}
+
+enum DrawStatus {
+  DRAFT
+  ASSEMBLED
+  PROOFED
+  SENT   // irreversible — email gone
+  FUNDED // manual mark
+}
+
+enum FeeStatus {
+  COMPUTED
+  PENDING_APPROVAL
+  POSTED  // both realms, pair-atomic
+  PROOFED
+  FAILED  // partial pair → compensating void executed
+}
+
+enum EmailStatus {
+  SEEN
+  CLASSIFIED
+  ROUTED
+  REPLIED_AUTO
+  DRAFTED
+  ARCHIVED
+  QUARANTINED
+}
+
+enum EmailClass {
+  INVOICE
+  DRAW_SHEET
+  LIEN_WAIVER
+  INSPECTION
+  LENDER_DOC
+  BANK_NOTICE
+  VENDOR_INQUIRY
+  LENDER_CORRESPONDENCE
+  OTHER
+}
+
+enum ReplyMode {
+  AUTO  // whitelisted sender × intent — proofed, irreversible
+  DRAFT // everyone else — never auto-send
+}
+
+enum ProofProduct {
+  INVOICE_PROOF
+  VERIFY_API
+  AUDIT_PROOF
+}
+
+enum ReconcileVerdict {
+  PASS
+  FLAG // markup / duplicate-billing / retainage-math / missing-basis
+}
+
+enum FeeStream {
+  DEV_CM      // 5% of the entity's OAEA-defined base, rides each draw
+  DRAW        // flat per-draw (Madison: $1,000)
+  ACCOUNTING  // $50/hr capped acctFeeCapMo per entity
+  PM          // pmFeeRate x GOI, post-CO only
+}
+
+// ───────────────────────── mail (Cowork writes via MCP) ─────────────────────────
+
+model EmailItem {
+  id          String      @id @default(uuid())
+  gmailMsgId  String      @unique // idempotency: same email 3× = one row
+  receivedAt  DateTime
+  sender      String
+  subject     String
+  class       EmailClass?
+  status      EmailStatus @default(SEEN)
+  attachments Attachment[]
+  replies     ReplyLog[]
+  intake      InvoiceIntake?
+  reconcile   DrawReconcile?
+  proofRefId  String?
+  proofRef    ProofRef?   @relation(fields: [proofRefId], references: [id])
+  createdAt   DateTime    @default(now())
+
+  @@index([status, receivedAt])
+}
+
+model Attachment {
+  id        String    @id @default(uuid())
+  emailId   String
+  email     EmailItem @relation(fields: [emailId], references: [id])
+  sha256    String    @unique // content dedupe across re-deliveries
+  filename  String
+  mimeType  String
+  storageUri String   // Supabase storage path
+  createdAt DateTime  @default(now())
+}
+
+model ReplyLog {
+  id         String    @id @default(uuid())
+  emailId    String
+  email      EmailItem @relation(fields: [emailId], references: [id])
+  mode       ReplyMode
+  template   String?
+  body       String
+  sentAt     DateTime? // null for DRAFT
+  proofRefId String?   // AUTO sends are proofed; drafts are not
+  proofRef   ProofRef? @relation(fields: [proofRefId], references: [id])
+  createdAt  DateTime  @default(now())
+}
+
+model WhitelistEntry {
+  senderPattern  String   @id // exact email or @domain
+  allowedIntents String[] // e.g. ["invoice_receipt_ack","status_update"]
+  template       String
+  addedBy        String
+  addedAt        DateTime @default(now())
+  // NOTE: money-adjacent content overrides whitelist — enforced in service, tested in A8.9
+}
+
+// ───────────────────────── AP pipeline (the core) ─────────────────────────
+
+model InvoiceIntake {
+  id           String       @id @default(uuid())
+  emailId      String?      @unique
+  email        EmailItem?   @relation(fields: [emailId], references: [id])
+  vendorRaw    String
+  vendorId     String?
+  vendor       Vendor?      @relation(fields: [vendorId], references: [id])
+  parsed       Json         // {invoice_no,total,lines[],bank{},...} — Cowork's judgment, recorded
+  entity       String?      // Location name, realm A
+  project      String?      // Customer:Job
+  item         String?      // cost code
+  amount       Decimal?     @db.Decimal(12, 2)
+  status       IntakeStatus @default(RECEIVED)
+  quarantineReason String?
+  overrideReason   String?  // required to approve a FLAG — included in nightly bundle
+  billDraft    BillDraft?
+  proofRefs    ProofRef[]   // Invoice-Proof result + Verify-API workflow_event
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([status])
+  @@index([vendorRaw, amount]) // duplicate heuristics support
+}
+
+model BillDraft {
+  id         String        @id @default(uuid())
+  intakeId   String        @unique
+  intake     InvoiceIntake @relation(fields: [intakeId], references: [id])
+  realm      Realm         @default(A)
+  qboPayload Json          // exact Bill body incl. LocationRef/CustomerRef/ItemRef/ClassRef
+  requestId  String        @unique // QBO idempotency — double-fire = one bill
+  approvedBy String?
+  approvedAt DateTime?
+  qboTxnId   String?
+  error      String?
+  createdAt  DateTime      @default(now())
+}
+
+// ───────────────────────── gates & money_lock ─────────────────────────
+
+model GateRun {
+  id          String      @id @default(uuid())
+  runDate     DateTime    @unique @db.Date
+  results     Json        // per-gate: G-A..G-F {pass, evidence}
+  verdict     GateVerdict
+  moneyLock   Boolean     @default(false) // true while latest verdict = RED
+  bundleProofId String?
+  bundleProof ProofRef?   @relation(fields: [bundleProofId], references: [id])
+  createdAt   DateTime    @default(now())
+}
+
+// ───────────────────────── draws (Adaptive parity + F6 moat) ─────────────────────────
+
+model DrawPackage {
+  id        String     @id @default(uuid())
+  project   String
+  period    String     // e.g. "2026-07"
+  lender    String
+  bva       Json       // budget-vs-actual snapshot at assemble time
+  pdfUri    String?
+  chainHash String?    // printed on the package footer
+  status    DrawStatus @default(DRAFT)
+  proofRefId String?
+  proofRef  ProofRef?  @relation(fields: [proofRefId], references: [id])
+  sentAt    DateTime?
+  fundedAt  DateTime?
+  createdAt DateTime   @default(now())
+
+  @@unique([project, period, lender])
+}
+
+model DrawReconcile {
+  id            String        @id @default(uuid())
+  gcDrawNo      String?       // GC's number ("13")
+  lenderDrawNo  String?       // lender's number ("6") — dual numbering is real
+  retainageRate Decimal?      @db.Decimal(4, 3) // 0.050 Concord / 0.100 Elite
+  format        String?       // AIA_G703 | PROCORE_PCI | LEGACY_STACK
+  emailId    String?          @unique
+  email      EmailItem?       @relation(fields: [emailId], references: [id])
+  project    String
+  gc         String           // e.g. "Rich Development"
+  period     String
+  sheetUri   String
+  variance   Json             // per-line: billed vs sub-invoice basis vs prior draws vs SOV
+  verdict    ReconcileVerdict
+  proofRefId String?
+  proofRef   ProofRef?        @relation(fields: [proofRefId], references: [id])
+  createdAt  DateTime         @default(now())
+}
+
+// ───────────────────────── fee engine (OAEA matrix is law) ─────────────────────────
+
+model FeeRun {
+  id           String    @id @default(uuid())
+  stream       FeeStream @default(DEV_CM)
+  period       String
+  entity       String    // NEVER 12SB / Summa Elite — refused in code path, tested, not config
+  base         Decimal   @db.Decimal(12, 2)
+  rate         Decimal   @db.Decimal(5, 4) // 0.0500
+  payee        String    // always "STV CM, LLC" post-7-2-2026 regime; kept for audit trail
+  invoiceTxnId String?   // realm B leg
+  billTxnId    String?   // realm A leg — pair-atomic or FAILED+void
+  status       FeeStatus @default(COMPUTED)
+  approvedBy   String?
+  proofRefId   String?
+  proofRef     ProofRef? @relation(fields: [proofRefId], references: [id])
+  createdAt    DateTime  @default(now())
+
+  @@unique([period, entity, stream])
+}
+
+// ───────────────────────── proof (pointer only — SoT is SwarmSync) ─────────────────────────
+
+model ProofRef {
+  id                String       @id @default(uuid())
+  swarmsyncProofId  String       @unique
+  chainHash         String
+  product           ProofProduct
+  verifyUrl         String       // GET /api/proof/:id/verify — independently checkable
+  localBundleUri    String?      // mirrored export (ADP §15 vendor-dependency hedge)
+  createdAt         DateTime     @default(now())
+
+  intakes    InvoiceIntake[]
+  gateRuns   GateRun[]
+  draws      DrawPackage[]
+  reconciles DrawReconcile[]
+  feeRuns    FeeRun[]
+  emails     EmailItem[]
+  replies    ReplyLog[]
+}
+
+// ───────────────────────── registry & vendors (config-as-code + parity) ─────────────────────────
+
+model EntityRegistry {
+  entity        String  @id // "12SB", "HLN", ...
+  locationA     String  // exact QBO Location name, realm A
+  feeRate       Decimal? @db.Decimal(5, 4) // 0.0500 where a current OAEA authorizes; NULL = NO_FEE
+  feePayee      String?  // "STV CM, LLC" (universal post-7-2-2026); NULL = NO_FEE
+  feeBase       String?  // the OAEA's exact base sentence, VERBATIM (bases differ per entity)
+  oaeaDocUrl    String?  // Drive link to the governing OAEA
+  oaeaEffective DateTime?
+  drawFee       Decimal? @db.Decimal(8, 2)  // 1000.00 where applicable
+  acctFeeCapMo  Decimal? @db.Decimal(8, 2)  // 500.00
+  pmFeeRate     Decimal? @db.Decimal(5, 4)  // 0.010 / 0.015; NULL pre-CO
+  lender        String?
+  capitalMap    Json     // holding→pct per current Exhibit A
+  // Rows are born ONLY via the stv-oaea-registry skill + migration. No row = no fee, any stream.
+}
+
+model GcCodeMap {
+  id     String @id @default(uuid())
+  gc     String // "Concord Homes" | "Elite Construction USA" | ...
+  gcCode String // "05-01-001" (DD-SS-III) | "63" (Procore item) | "22 00 00" (CSI)
+  gcDesc String
+  qbItem String // STV item, e.g. "017 Plumbing"
+  @@unique([gc, gcCode])
+}
+
+model MemberVendor {
+  id                   String  @id @default(uuid())
+  entity               String
+  vendor               String
+  contractContribution Decimal @db.Decimal(12, 2)
+  exhibitAUrl          String?
+  // A sub on the cap table may bill against equity, not cash — the double-pay trap.
+  @@unique([entity, vendor])
+}
+
+model Vendor {
+  id        String      @id @default(uuid())
+  name      String      @unique
+  aliases   String[]    // raw email/PDF spellings → canonical
+  defaultItem String?   // usual cost code
+  bankLast4 String?     // Invoice-Proof bank-change baseline
+  docs      VendorDoc[]
+  intakes   InvoiceIntake[]
+  createdAt DateTime    @default(now())
+}
+
+model VendorDoc {
+  id        String   @id @default(uuid())
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id])
+  kind      String   // COI | W9 | LICENSE | LIEN_WAIVER
+  storageUri String
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([vendorId, kind])
+}
+
+// ───────────────────────── MCP audit (every mutation Cowork makes) ─────────────────────────
+
+model McpAuditLog {
+  id        String   @id @default(uuid())
+  tool      String   // submit_intake | approve | ...
+  input     Json
+  result    Json
+  actorKey  String   // sk_ key fingerprint, never the key
+  createdAt DateTime @default(now())
+
+  @@index([tool, createdAt])
+}

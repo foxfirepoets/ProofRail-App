@@ -1,0 +1,47 @@
+!CLASS	NAME
+CLASS	01 STVE
+CLASS	02 STDG
+CLASS	03 STV LLC
+CLASS	04 Lykos
+CLASS	05 Providence
+CLASS	06 Lazarus
+CLASS	07 AW1
+CLASS	08 AW2
+CLASS	09 Orion
+CLASS	10 Charis
+CLASS	11 Exult
+CLASS	12 Aubrey Partners
+CLASS	13 Liberation (wind-down)
+CLASS	14 WFW (wind-down)
+CLASS	15 STV CM
+CLASS	16 HLE (held for sale)
+CLASS	90 Parent Overhead
+!CUST	NAME
+CUST	12SB Hunters Landing
+CUST	HLN Hunters Landing North
+CUST	Union Walk
+CUST	Madison Park
+CUST	Quincy
+CUST	The Vic Apartments
+CUST	Summa Elite (Rock Creek Apartments)
+CUST	Ventura Landing
+CUST	Freeman Ranch
+CUST	The Carlo
+CUST	Ledges at Moab
+CUST	RM Texas
+CUST	Elephant Rock
+CUST	EJH Development
+CUST	Dominus
+CUST	Rock Creek Acquisitions
+CUST	Camden Crossing
+!VEND	NAME
+VEND	EXEC - Mike Watson
+VEND	EXEC - Porter Christensen
+VEND	Ricks & Company LLC
+!INVITEM	NAME	INVITEMTYPE	DESC	ACCNT	PRICE
+INVITEM	FEE-DEV-INC	SERV	Dev/CM Fee Income 5% - ALWAYS class 15 STV CM per 7-2-26 OAEA refresh (incl 12SB and Summa Elite) - fee base per entity OAEA - no EntityRegistry row = no invoice	Developer Fee Income	0
+INVITEM	FEE-DRAW-INC	SERV	Draw Fee $1000/draw - class 15 STV CM	Draw Fee Income	0
+INVITEM	FEE-ACCT-INC	SERV	Accounting fee $50/hr cap $500/mo/entity - class 15 STV CM	Accounting Fee Income	0
+INVITEM	FEE-PM-INC	SERV	PM oversight 1.0-1.5% GOI post-CO - class 15 STV CM	PM Oversight Fee Income	0
+INVITEM	FEE-CEO	SERV	CEO Commission 2% - Watson - internal STV bonus, never a project-LLC obligation	CEO Commission Expense (2%)	0
+INVITEM	FEE-PRES	SERV	President Commission 1% - Porter Christensen - internal STV bonus	Pres Commission Expense (1%)	0

@@ -1,0 +1,143 @@
+!ACCNT	NAME	ACCNTTYPE	DESC	ACCNUM
+ACCNT	IC Clearing	BANK	Cross-class JE balancer - MUST net to zero per class	10000
+ACCNT	Operating Cash	BANK	Parent - one sub per entity	10100
+ACCNT	Operating Cash:12SB	BANK	12SB Hunters Landing operating	10101
+ACCNT	Operating Cash:HLN	BANK	HLN operating (post-fraud acct ...48560)	10102
+ACCNT	Operating Cash:Union	BANK	Union Station / Union Walk operating	10103
+ACCNT	Operating Cash:Madison	BANK	Madison Park operating	10104
+ACCNT	Operating Cash:Quincy	BANK	Quincy Partners operating	10105
+ACCNT	Operating Cash:Vic	BANK	Vic Partners operating	10106
+ACCNT	Operating Cash:Summa Elite	BANK	Summa Elite LLC (754-unit Gainesville TX project) operating	10107
+ACCNT	Operating Cash:Ventura	BANK	Ventura Landing operating	10108
+ACCNT	Operating Cash:Freeman	BANK	Freeman Ranch operating	10109
+ACCNT	Operating Cash:Carlo	BANK	Carlo @ Washington operating (PM Cornerstone)	10110
+ACCNT	Operating Cash:Ledges	BANK	Ledges at Moab operating	10111
+ACCNT	Operating Cash:RM Texas	BANK	RM Texas Partners operating	10112
+ACCNT	Operating Cash:Elephant Rock	BANK	Elephant Rock (MO) operating	10113
+ACCNT	Operating Cash:EJH	BANK	EJH Development operating	10114
+ACCNT	Operating Cash:Dominus	BANK	Dominus (QB legacy name: Dominus Data LLC) operating	10115
+ACCNT	Operating Cash:Rock Creek Acq	BANK	Rock Creek Acquisitions LLC (TX land entity - SEPARATE from Summa Elite)	10116
+ACCNT	Operating Cash:Camden	BANK	Camden Crossing operating	10117
+ACCNT	Operating Cash:Ensign	BANK	Ensign (sold - wind-down/final K-1 posture)	10118
+ACCNT	Draw Funding	BANK	Parent - draw proceeds land here (draw-booked entities only)	10200
+ACCNT	Draw Funding:12SB	BANK	12SB construction draws (gross - not cash)	10201
+ACCNT	Draw Funding:Union	BANK	Union construction draws (gross - not cash)	10203
+ACCNT	Draw Funding:Madison	BANK	Madison Arixa draws (fund control Phoenix Tide)	10204
+ACCNT	Draw Funding:Summa Elite	BANK	Summa Elite / Rock Creek draws	10207
+ACCNT	Reserves & Escrow	BANK	Add sub per entity only as needed	10300
+ACCNT	Credit Card Clearing	CCARD	Card activity - class every line	10500
+ACCNT	Accounts Receivable	AR	Draw/sale billings - class every transaction	12100
+ACCNT	Due From Corp	OCASSET	Parent - IC asset leg, one sub per entity	12500
+ACCNT	Due From Corp:12SB	OCASSET	12SB receivable from corporate family	12501
+ACCNT	Due From Corp:HLN	OCASSET	HLN receivable from corporate family	12502
+ACCNT	Due From Corp:Union	OCASSET	Union receivable from corporate family	12503
+ACCNT	Due From Corp:Madison	OCASSET	Madison receivable from corporate family	12504
+ACCNT	Due From Corp:Quincy	OCASSET	Quincy receivable from corporate family	12505
+ACCNT	Due From Corp:Vic	OCASSET	Vic receivable from corporate family	12506
+ACCNT	Due From Corp:Summa Elite	OCASSET	Summa Elite receivable from corporate family	12507
+ACCNT	Due From Corp:Ventura	OCASSET	Ventura receivable from corporate family	12508
+ACCNT	Due From Corp:Freeman	OCASSET	Freeman receivable from corporate family	12509
+ACCNT	Due From Corp:Carlo	OCASSET	Carlo receivable from corporate family	12510
+ACCNT	Due From Corp:Ledges	OCASSET	Ledges receivable from corporate family	12511
+ACCNT	Due From Corp:RM Texas	OCASSET	RM Texas receivable from corporate family	12512
+ACCNT	Due From Corp:Elephant Rock	OCASSET	Elephant Rock receivable from corporate family	12513
+ACCNT	Due From Corp:EJH	OCASSET	EJH receivable from corporate family	12514
+ACCNT	Due From Corp:Dominus	OCASSET	Dominus receivable from corporate family	12515
+ACCNT	Due From Corp:Rock Creek Acq	OCASSET	Rock Creek Acq receivable from corporate family	12516
+ACCNT	Due From Corp:Camden	OCASSET	Camden receivable from corporate family	12517
+ACCNT	Due From Corp:Ensign	OCASSET	Ensign receivable from corporate family	12518
+ACCNT	CIP - Land & Acquisition	OCASSET	Land + acquisition (Items carry detail)	15100
+ACCNT	CIP - Soft Costs	OCASSET	Supervision, GC, inspections, temp facilities	15200
+ACCNT	CIP - Hard Costs	OCASSET	Site, concrete, framing, MEP, finishes	15300
+ACCNT	CIP - Financing Costs	OCASSET	Interest, loan fees, carry	15400
+ACCNT	CIP - Dev Fee Capitalized	OCASSET	5% fee if CPA capitalizes - NEVER for 12SB / Summa Elite	15500
+ACCNT	Completed Real Estate	FIXASSET	When CIP is placed in service	17100
+ACCNT	Accumulated Depreciation	FIXASSET	If held for rental	17900
+ACCNT	Accounts Payable	AP	Vendor bills - class every line	20100
+ACCNT	GC Retainage Payable	OCLIAB	Holdback withheld from vendors	20200
+ACCNT	Accrued Expenses	OCLIAB	Period-end accruals	20300
+ACCNT	Construction Loans	LTLIAB	Parent - one sub per entity+lender	22000
+ACCNT	Construction Loans:12SB CanyonView	LTLIAB	12SB - Canyon View CU	22001
+ACCNT	Construction Loans:HLN Arixa	LTLIAB	HLN - Arixa bridge ($317K plug lives here labeled - do NOT clear)	22002
+ACCNT	Construction Loans:HLN Seller Fin	LTLIAB	HLN - Providence/Keyes/Long Shot seller financing	22012
+ACCNT	Construction Loans:Union Granite LN86	LTLIAB	Union - Granite CU LN86 via Alloya	22003
+ACCNT	Construction Loans:Madison Arixa	LTLIAB	Madison Park - Arixa	22004
+ACCNT	Construction Loans:Quincy FirstState	LTLIAB	Quincy - First State Bank	22005
+ACCNT	Construction Loans:Vic Copa	LTLIAB	Vic - Copa Capital Loan 3791 (payoff in progress)	22006
+ACCNT	Construction Loans:SummaElite MM	LTLIAB	Summa Elite / Rock Creek lender	22007
+ACCNT	Construction Loans:Ventura Trevian	LTLIAB	Ventura - Trevian/ReSpark	22008
+ACCNT	Construction Loans:Freeman Arixa	LTLIAB	Freeman Ranch - Arixa	22009
+ACCNT	Construction Loans:Carlo InterCap	LTLIAB	Carlo @ Washington - InterCap Lending	22010
+ACCNT	Due To Corp	OCLIAB	Parent - IC liability leg, one sub per entity	22500
+ACCNT	Due To Corp:12SB	OCLIAB	12SB owes corporate family	22501
+ACCNT	Due To Corp:HLN	OCLIAB	HLN owes corporate family	22502
+ACCNT	Due To Corp:Union	OCLIAB	Union owes corporate family	22503
+ACCNT	Due To Corp:Madison	OCLIAB	Madison owes corporate family	22504
+ACCNT	Due To Corp:Quincy	OCLIAB	Quincy owes corporate family	22505
+ACCNT	Due To Corp:Vic	OCLIAB	Vic owes corporate family	22506
+ACCNT	Due To Corp:Summa Elite	OCLIAB	Summa Elite owes corporate family	22507
+ACCNT	Due To Corp:Ventura	OCLIAB	Ventura owes corporate family	22508
+ACCNT	Due To Corp:Freeman	OCLIAB	Freeman owes corporate family	22509
+ACCNT	Due To Corp:Carlo	OCLIAB	Carlo owes corporate family	22510
+ACCNT	Due To Corp:Ledges	OCLIAB	Ledges owes corporate family	22511
+ACCNT	Due To Corp:RM Texas	OCLIAB	RM Texas owes corporate family	22512
+ACCNT	Due To Corp:Elephant Rock	OCLIAB	Elephant Rock owes corporate family	22513
+ACCNT	Due To Corp:EJH	OCLIAB	EJH owes corporate family	22514
+ACCNT	Due To Corp:Dominus	OCLIAB	Dominus owes corporate family	22515
+ACCNT	Due To Corp:Rock Creek Acq	OCLIAB	Rock Creek Acq owes corporate family	22516
+ACCNT	Due To Corp:Camden	OCLIAB	Camden owes corporate family	22517
+ACCNT	Due To Corp:Ensign	OCLIAB	Ensign owes corporate family	22518
+ACCNT	Draw Liability / Unearned Draw	OCLIAB	Draws received not yet costed	23000
+ACCNT	Partner Capital	EQUITY	Parent - subs per entity per OAEA allocation map	30100
+ACCNT	Partner Capital:12SB-Lykos	EQUITY	12SB capital - Lykos Acquisitions	30101
+ACCNT	Partner Capital:12SB-Aubrey	EQUITY	12SB capital - Aubrey	30111
+ACCNT	Partner Capital:HLN-Providence	EQUITY	HLN capital - Providence Partners	30102
+ACCNT	Partner Capital:Union-Lazarus	EQUITY	Union capital - Lazarus Investments	30103
+ACCNT	Partner Capital:Union-STV	EQUITY	Union capital - Summa Terra Ventures LLC	30113
+ACCNT	Partner Capital:Union-Outside	EQUITY	Union capital - outside partner (Nick)	30123
+ACCNT	Partner Capital:Madison-Lykos	EQUITY	Madison capital - Lykos	30104
+ACCNT	Partner Capital:Madison-AW1	EQUITY	Madison - AW1 1% per 7-2-26 OAEA	30114
+ACCNT	Partner Capital:Madison-Lazarus	EQUITY	Madison - Lazarus 4.07% per 7-2-26 OAEA	30124
+ACCNT	Partner Capital:Madison-Outside	EQUITY	Madison - 8 outside lines per Exhibit A (Lykos 73.55% = Executive)	30134
+ACCNT	Partner Capital:Quincy-STDG	EQUITY	Quincy capital - STDG	30105
+ACCNT	Partner Capital:Quincy-Lazarus	EQUITY	Quincy capital - Lazarus	30115
+ACCNT	Partner Capital:Quincy-Outside	EQUITY	Quincy capital - Adam Lee / Greg Guymon	30125
+ACCNT	Partner Capital:Vic-Exult	EQUITY	Vic capital - Exult Assets	30106
+ACCNT	Partner Capital:Vic-Orion	EQUITY	Vic capital - Orion Investing	30116
+ACCNT	Partner Capital:Vic-Charis	EQUITY	Vic capital - Charis Acquisitions	30126
+ACCNT	Partner Capital:SummaElite-Providence	EQUITY	Summa Elite - Providence 42.165% (Executive Member per 7-2-26 OAEA)	30107
+ACCNT	Partner Capital:SummaElite-STV	EQUITY	Summa Elite - STV LLC 1.039% per 7-2-26 OAEA	30117
+ACCNT	Partner Capital:SummaElite-ElephRock	EQUITY	Summa Elite - Elephant Rock LLC 1.615% (INTERCOMPANY equity)	30127
+ACCNT	Partner Capital:SummaElite-Outside	EQUITY	Summa Elite - DM Capital 42.165% + ~35 outside lines per Exhibit A	30137
+ACCNT	Partner Capital:Ventura-STDG	EQUITY	Ventura capital - STDG	30108
+ACCNT	Partner Capital:Freeman-Providence	EQUITY	Freeman capital - Providence	30109
+ACCNT	Partner Capital:Carlo-AW1	EQUITY	Carlo - AW1 50% per OAEA ledger	30130
+ACCNT	Partner Capital:Carlo-Hendricks	EQUITY	Carlo - Erin Hendricks 50%	30140
+ACCNT	Partner Capital:Ledges-Providence	EQUITY	Ledges capital - Providence	30131
+ACCNT	Partner Capital:Ledges-Aubrey	EQUITY	Ledges capital - Aubrey (12% direct)	30141
+ACCNT	Partner Capital:RMTexas-Lazarus	EQUITY	RM Texas capital - Lazarus	30132
+ACCNT	Partner Capital:RMTexas-Aubrey	EQUITY	RM Texas capital - Aubrey (0.42% direct)	30142
+ACCNT	Partner Capital:ElephantRock-Providence	EQUITY	Elephant Rock capital - Providence	30133
+ACCNT	Partner Capital:EJH-TBD	EQUITY	EJH capital - partners TBD (confirm OA)	30134
+ACCNT	Partner Capital:Dominus-Aubrey	EQUITY	Dominus capital - Aubrey (70% direct)	30135
+ACCNT	Partner Capital:Dominus-Outside	EQUITY	Dominus capital - outside partners (30%)	30145
+ACCNT	Partner Capital:RockCreekAcq-AW1	EQUITY	Rock Creek Acq - AW1 25% (25 votes)	30146
+ACCNT	Partner Capital:RockCreekAcq-Outside	EQUITY	Rock Creek Acq - QC Denton 50% + DWM Holdings 25%	30156
+ACCNT	Partner Capital:Camden-Lazarus	EQUITY	Camden Crossing - Lazarus line per ledger	30147
+ACCNT	Partner Capital:Camden-Outside	EQUITY	Camden Crossing - outside per Exhibit A	30157
+ACCNT	Partner Capital:Ensign-Lazarus	EQUITY	Ensign - Lazarus $924,890.12 per ledger - verify Exhibit A	30148
+ACCNT	Partner Capital:Ensign-Outside	EQUITY	Ensign - outside per 7-2-26 Exhibit A	30158
+ACCNT	Distributions	EQUITY	Capital out - class = entity	30300
+ACCNT	Retained Earnings	EQUITY	Accumulated	30900
+ACCNT	Sale Proceeds	INC	Lot/unit/property sales	40100
+ACCNT	Other / Rental Income	INC	Interim rental	40900
+ACCNT	Cost of Real Estate Sold	COGS	CIP relieved at sale	50100
+ACCNT	Closing Costs - Sale	COGS	Selling costs / sale commissions	50200
+ACCNT	Developer Fee Expense	EXP	5% if expensed not capitalized - never 12SB / Summa Elite	60100
+ACCNT	Professional Fees (CPA/Legal)	EXP	Outside services	70300
+ACCNT	Insurance	EXP	Class to owning entity	70400
+ACCNT	Property Taxes	EXP	Carry cost	70500
+ACCNT	Interest Expense	EXP	Loan interest (if expensed)	70600
+ACCNT	Marketing	EXP	Project marketing	70700
+ACCNT	OB Suspense - Flagged	OCLIAB	Opening-balance holes from flagged items - MUST read 0.00 in every class before go-live	29900
+ACCNT	Other Income / Expense	EXINC	Non-operating	80100

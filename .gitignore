@@ -1,0 +1,21 @@
+# secrets — never commit
+.env
+.qbo_tokens.json
+gmail-mcp-server/.gauth.json
+gmail-mcp-server/.oauth2.*.json
+gmail-mcp-server/node_modules/
+gmail-mcp-server/dist/
+
+# operational data (contains business content)
+logs/
+invoiceproof_packets/
+
+# python
+__pycache__/
+*.pyc
+
+.trigger
+
+# local build artifact used to smoke-test the MCP server (tsc --outDir), not shipped
+.dist-test/
+node_modules/

@@ -1,0 +1,65 @@
+Customer (Project) / Sub-customer (Phase) — colon = hierarchy
+12SB Hunters Landing
+12SB Hunters Landing:Acquisition
+12SB Hunters Landing:Sitework
+12SB Hunters Landing:Vertical
+12SB Hunters Landing:Disposition
+HLN Hunters Landing North
+HLN Hunters Landing North:Acquisition
+HLN Hunters Landing North:Sitework
+HLN Hunters Landing North:Vertical
+HLN Hunters Landing North:Disposition
+Union Walk
+Union Walk:Acquisition
+Union Walk:Sitework
+Union Walk:Vertical
+Union Walk:Disposition
+Madison Park
+Madison Park:Acquisition
+Madison Park:Sitework
+Madison Park:Vertical
+Madison Park:Disposition
+Quincy
+Quincy:Operations
+Quincy:Disposition
+The Vic Apartments
+The Vic Apartments:Operations
+The Vic Apartments:Disposition
+Rock Creek Apartments (Summa Elite)
+Rock Creek Apartments (Summa Elite):Sitework
+Rock Creek Apartments (Summa Elite):Vertical
+Rock Creek Apartments (Summa Elite):Disposition
+Ventura Landing
+Ventura Landing:Operations
+Ventura Landing:Disposition
+Freeman Ranch
+Freeman Ranch:Operations
+Freeman Ranch:Disposition
+The Carlo
+The Carlo:Operations
+The Carlo:Disposition
+Ledges at Moab
+Ledges at Moab:Acquisition
+Ledges at Moab:Sitework
+Ledges at Moab:Vertical
+Ledges at Moab:Disposition
+RM Texas
+RM Texas:Operations
+RM Texas:Disposition
+Elephant Rock
+Elephant Rock:Sitework
+Elephant Rock:Vertical
+Elephant Rock:Disposition
+EJH Development
+EJH Development:Acquisition
+EJH Development:Vertical
+EJH Development:Disposition
+Dominus
+Dominus:Operations
+Rock Creek Acq Land
+Rock Creek Acq Land:Operations
+Camden Crossing
+Camden Crossing:Operations
+Camden Crossing:Disposition
+Ensign
+Ensign:Disposition

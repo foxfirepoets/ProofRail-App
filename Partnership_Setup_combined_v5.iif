@@ -1,0 +1,208 @@
+!CLASS	NAME
+CLASS	01 12SB Hunters Landing
+CLASS	02 HLN Hunters Landing North
+CLASS	03 Union Station-Union Walk
+CLASS	04 Madison Park
+CLASS	05 Quincy Partners
+CLASS	06 Vic Partners
+CLASS	07 Summa Elite
+CLASS	08 Ventura Landing
+CLASS	09 Freeman Ranch
+CLASS	10 Carlo @ Washington
+CLASS	11 Ledges at Moab
+CLASS	12 RM Texas
+CLASS	13 Elephant Rock
+CLASS	14 EJH Development
+CLASS	15 Dominus
+CLASS	16 Rock Creek Acquisitions
+CLASS	17 Camden Crossing
+CLASS	18 Ensign (wind-down)
+!CUST	NAME
+CUST	12SB Hunters Landing
+CUST	12SB Hunters Landing:Acquisition
+CUST	12SB Hunters Landing:Sitework
+CUST	12SB Hunters Landing:Vertical
+CUST	12SB Hunters Landing:Disposition
+CUST	HLN Hunters Landing North
+CUST	HLN Hunters Landing North:Acquisition
+CUST	HLN Hunters Landing North:Sitework
+CUST	HLN Hunters Landing North:Vertical
+CUST	HLN Hunters Landing North:Disposition
+CUST	Union Walk
+CUST	Union Walk:Acquisition
+CUST	Union Walk:Sitework
+CUST	Union Walk:Vertical
+CUST	Union Walk:Disposition
+CUST	Madison Park
+CUST	Madison Park:Acquisition
+CUST	Madison Park:Sitework
+CUST	Madison Park:Vertical
+CUST	Madison Park:Disposition
+CUST	Quincy
+CUST	Quincy:Operations
+CUST	Quincy:Disposition
+CUST	The Vic Apartments
+CUST	The Vic Apartments:Operations
+CUST	The Vic Apartments:Disposition
+CUST	Rock Creek Apartments (Summa Elite)
+CUST	Rock Creek Apartments (Summa Elite):Sitework
+CUST	Rock Creek Apartments (Summa Elite):Vertical
+CUST	Rock Creek Apartments (Summa Elite):Disposition
+CUST	Ventura Landing
+CUST	Ventura Landing:Operations
+CUST	Ventura Landing:Disposition
+CUST	Freeman Ranch
+CUST	Freeman Ranch:Operations
+CUST	Freeman Ranch:Disposition
+CUST	The Carlo
+CUST	The Carlo:Operations
+CUST	The Carlo:Disposition
+CUST	Ledges at Moab
+CUST	Ledges at Moab:Acquisition
+CUST	Ledges at Moab:Sitework
+CUST	Ledges at Moab:Vertical
+CUST	Ledges at Moab:Disposition
+CUST	RM Texas
+CUST	RM Texas:Operations
+CUST	RM Texas:Disposition
+CUST	Elephant Rock
+CUST	Elephant Rock:Sitework
+CUST	Elephant Rock:Vertical
+CUST	Elephant Rock:Disposition
+CUST	EJH Development
+CUST	EJH Development:Acquisition
+CUST	EJH Development:Vertical
+CUST	EJH Development:Disposition
+CUST	Dominus
+CUST	Dominus:Operations
+CUST	Rock Creek Acq Land
+CUST	Rock Creek Acq Land:Operations
+CUST	Camden Crossing
+CUST	Camden Crossing:Operations
+CUST	Camden Crossing:Disposition
+CUST	Ensign
+CUST	Ensign:Disposition
+!VEND	NAME
+VEND	IC - STV CM
+VEND	GC - Elite Construction USA (TX)
+VEND	GC - Rich Development Inc
+VEND	GC - Concord Homes Utah
+VEND	LENDER - Canyon View CU
+VEND	LENDER - Arixa
+VEND	LENDER - Granite CU
+VEND	LENDER - First State Bank
+VEND	LENDER - Copa Capital
+VEND	LENDER - Trevian ReSpark
+VEND	LENDER - InterCap Lending
+VEND	LENDER - UFirst Credit Union (legacy)
+VEND	Altura Cameras LLC
+VEND	Beazer Lock & Key
+VEND	Boardwalk Custom Builders
+VEND	Bronco Fence Company
+VEND	CB Building
+VEND	Cearley
+VEND	Dias Quality Framing
+VEND	Dumps Easy
+VEND	Evolution Construction
+VEND	Fortified Doorworks
+VEND	Fox & Hound
+VEND	Hansen All Season Insulation
+VEND	Intermountain Testing
+VEND	K Carter Construction
+VEND	Lara & Sons Construction
+VEND	MC Siding
+VEND	Meraki Steel
+VEND	Metro Porcelain & Fiberglass
+VEND	My Roof
+VEND	Next Day Blinds
+VEND	Ogden City
+VEND	Overhead Door Company
+VEND	Perennial West LLC
+VEND	Performance Painting Co
+VEND	Perkes Roofing
+VEND	Poulsen Finish & Decor
+VEND	Precision Concrete Pumping
+VEND	Pro Interiors
+VEND	Select Specialties
+VEND	Shower Solutions
+VEND	South Peak Construction LLC
+VEND	Sunrise Elite
+VEND	Sweep N Utah
+VEND	Stripe Zone
+VEND	TK Elevator Corporation
+VEND	TST Fire Protection
+VEND	United Site Services
+VEND	Urbane
+VEND	Wasatch Construction Clean Up
+VEND	Wasatch Premier Home Services
+VEND	Webb's Windows LLC
+!INVITEM	NAME	INVITEMTYPE	DESC	ACCNT	PRICE
+INVITEM	001 Survey	PART	Survey	CIP - Soft Costs	0
+INVITEM	002 Excavation	PART	Excavation	CIP - Hard Costs	0
+INVITEM	003 Concrete	PART	Concrete	CIP - Hard Costs	0
+INVITEM	004 UDOT Concrete	PART	UDOT Concrete	CIP - Hard Costs	0
+INVITEM	005 Fencing	PART	Fencing	CIP - Hard Costs	0
+INVITEM	007 Turnkey Frame / Garage	PART	Turnkey Frame / Garage	CIP - Hard Costs	0
+INVITEM	008 Garage Roof	PART	Garage Roof	CIP - Hard Costs	0
+INVITEM	009 Roofing (L&M)	PART	Roofing (L&M)	CIP - Hard Costs	0
+INVITEM	010 Deck Coatings / Decking	PART	Deck Coatings / Decking	CIP - Hard Costs	0
+INVITEM	011 Structural Steel - Parking	PART	Structural Steel - Parking	CIP - Hard Costs	0
+INVITEM	012 Steel - All Other Features	PART	Steel - All Other Features	CIP - Hard Costs	0
+INVITEM	013 Garage Door (Trash)	PART	Garage Door (Trash)	CIP - Hard Costs	0
+INVITEM	014 Store Front (Labor)	PART	Store Front (Labor)	CIP - Hard Costs	0
+INVITEM	015 Elevator	PART	Elevator	CIP - Hard Costs	0
+INVITEM	016 HM Door (Labor / Material)	PART	HM Door (Labor / Material)	CIP - Hard Costs	0
+INVITEM	017 Plumbing	PART	Plumbing	CIP - Hard Costs	0
+INVITEM	018 HVAC	PART	HVAC	CIP - Hard Costs	0
+INVITEM	019 Electrical	PART	Electrical	CIP - Hard Costs	0
+INVITEM	020 EV Charging Stations	PART	EV Charging Stations	CIP - Hard Costs	0
+INVITEM	021 Sprinkler / Fire System	PART	Sprinkler / Fire System	CIP - Hard Costs	0
+INVITEM	022 Fire Caulk	PART	Fire Caulk	CIP - Hard Costs	0
+INVITEM	023 Gypcrete	PART	Gypcrete	CIP - Hard Costs	0
+INVITEM	024 Insulation	PART	Insulation	CIP - Hard Costs	0
+INVITEM	025 Sheetrock / Drywall	PART	Sheetrock / Drywall	CIP - Hard Costs	0
+INVITEM	026 Finish Materials (BFS)	PART	Finish Materials (BFS)	CIP - Hard Costs	0
+INVITEM	027 Finish Labor / Trim	PART	Finish Labor / Trim	CIP - Hard Costs	0
+INVITEM	028 Interior Paint	PART	Interior Paint	CIP - Hard Costs	0
+INVITEM	030 Garage Doors	PART	Garage Doors	CIP - Hard Costs	0
+INVITEM	031 Floor Prep	PART	Floor Prep	CIP - Hard Costs	0
+INVITEM	032 Hardware & Install Labor	PART	Hardware & Install Labor	CIP - Hard Costs	0
+INVITEM	033 Fire Extinguishers	PART	Fire Extinguishers	CIP - Hard Costs	0
+INVITEM	034 Mirrors / Shower	PART	Mirrors / Shower	CIP - Hard Costs	0
+INVITEM	035 Flooring / Wall Tile (M&L)	PART	Flooring / Wall Tile (M&L)	CIP - Hard Costs	0
+INVITEM	036 Brick	PART	Brick	CIP - Hard Costs	0
+INVITEM	037 Stucco EFIS Soffit Fascia	PART	Stucco EFIS Soffit Fascia	CIP - Hard Costs	0
+INVITEM	040 Roof Hatch	PART	Roof Hatch	CIP - Hard Costs	0
+INVITEM	041 Trash Chute	PART	Trash Chute	CIP - Hard Costs	0
+INVITEM	042 Pool	PART	Pool	CIP - Hard Costs	0
+INVITEM	043 Knox Box & Fire Lids	PART	Knox Box & Fire Lids	CIP - Hard Costs	0
+INVITEM	046 Signage	PART	Signage	CIP - Hard Costs	0
+INVITEM	047 Amenities	PART	Amenities	CIP - Hard Costs	0
+INVITEM	048 Garden Shed & Pad	PART	Garden Shed & Pad	CIP - Hard Costs	0
+INVITEM	049 Blinds	PART	Blinds	CIP - Hard Costs	0
+INVITEM	069 Exterior Wall Project	PART	Exterior Wall Project	CIP - Hard Costs	0
+INVITEM	050 Contingency	PART	Contingency	CIP - Soft Costs	0
+INVITEM	052 Honey Bucket / Porta Potty	PART	Honey Bucket / Porta Potty	CIP - Soft Costs	0
+INVITEM	053 Dumpster / Garbage Haul	PART	Dumpster / Garbage Haul	CIP - Soft Costs	0
+INVITEM	056 Final Clean / Cleaning	PART	Final Clean / Cleaning	CIP - Soft Costs	0
+INVITEM	057 Street Sweeping	PART	Street Sweeping	CIP - Soft Costs	0
+INVITEM	058 Concrete Wash Out	PART	Concrete Wash Out	CIP - Soft Costs	0
+INVITEM	059 SWPPP	PART	SWPPP	CIP - Soft Costs	0
+INVITEM	060 Temp Power	PART	Temp Power	CIP - Soft Costs	0
+INVITEM	061 Office Trailer	PART	Office Trailer	CIP - Soft Costs	0
+INVITEM	062 Security Cameras	PART	Security Cameras	CIP - Soft Costs	0
+INVITEM	063 Special Inspections	PART	Special Inspections	CIP - Soft Costs	0
+INVITEM	065 General Conditions	PART	General Conditions	CIP - Soft Costs	0
+INVITEM	067 Site Supervision	PART	Site Supervision	CIP - Soft Costs	0
+INVITEM	068 Construction Profit (GC)	PART	GC builder profit inside the draw - NOT the 5% developer fee	CIP - Soft Costs	0
+INVITEM	100 Land Acquisition	PART	Land purchase	CIP - Land & Acquisition	0
+INVITEM	101 Due Diligence (Acq)	PART	Acquisition due diligence / closing	CIP - Land & Acquisition	0
+INVITEM	110 Entitlements & A&E	PART	Entitlements, architecture, engineering	CIP - Soft Costs	0
+INVITEM	120 Loan Fees	PART	Loan fees	CIP - Financing Costs	0
+INVITEM	121 Construction Interest	PART	Interest carry	CIP - Financing Costs	0
+INVITEM	122 Carry / Property Taxes	PART	Carry costs / project property taxes	CIP - Financing Costs	0
+INVITEM	200 Marketing (Disposition)	PART	Sales marketing	Marketing	0
+INVITEM	201 Sales Commission (Sale)	PART	Selling costs / sale commission	Closing Costs - Sale	0
+INVITEM	RETAINAGE-HELD	OTHC	Retainage withheld (negative line on the draw bill)	GC Retainage Payable	0
+INVITEM	FEE-DEV	SERV	Dev/CM Fee 5% to STV CM LLC per 7-2-26 OAEA refresh - vendor ALWAYS IC - STV CM - fee BASE varies per OAEA (12SB excludes land) - post only per EntityRegistry row - Rock Creek Acq / Carlo / EJH / Dominus / Camden: no verified clause	CIP - Dev Fee Capitalized	0
+INVITEM	FEE-DRAW	SERV	Flat draw fee ($1000/draw per Madison practice) to STV CM - verify per OAEA/lender	CIP - Financing Costs	0

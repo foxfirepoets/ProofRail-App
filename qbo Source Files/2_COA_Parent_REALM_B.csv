@@ -1,0 +1,110 @@
+Account Number,Account Name,Type,Detail Type,Description
+10000,IC Clearing,Bank,Checking,Cross-class JE balancer - MUST net to zero per class
+10100,Operating Cash,Bank,Checking,Parent - one sub per corporate entity with a real account
+10101,Operating Cash:STVE,Bank,Checking,STVE operating (UCCU / MACU manual entry)
+10102,Operating Cash:STDG,Bank,Checking,"STDG (MACU + Granite = manual entry, no bank feed)"
+10103,Operating Cash:HLE,Bank,Checking,"HLE - Hunters Landing East (internally funded, held for sale)"
+10500,Credit Card Clearing,Credit Card,Credit Card,Card activity - class every line
+12200,Dev Fee Receivable,Other Current Assets,Other Current Assets,5% owed by projects - class = 15 STV CM (universal payee per 7-2-26 OAEAs)
+12500,Due From Projects,Other Current Assets,Other Current Assets,"Parent - IC asset leg, one sub per project entity"
+12501,Due From Projects:12SB,Other Current Assets,Other Current Assets,Mirror of partnership-file Due To Corp:12SB
+12502,Due From Projects:HLN,Other Current Assets,Other Current Assets,Mirror of Due To Corp:HLN
+12503,Due From Projects:Union,Other Current Assets,Other Current Assets,Mirror of Due To Corp:Union
+12504,Due From Projects:Madison,Other Current Assets,Other Current Assets,Mirror of Due To Corp:Madison
+12505,Due From Projects:Quincy,Other Current Assets,Other Current Assets,Mirror of Due To Corp:Quincy
+12506,Due From Projects:Vic,Other Current Assets,Other Current Assets,Mirror of Due To Corp:Vic
+12507,Due From Projects:Summa Elite,Other Current Assets,Other Current Assets,Mirror of Due To Corp:Summa Elite
+12508,Due From Projects:Ventura,Other Current Assets,Other Current Assets,Mirror of Due To Corp:Ventura
+12509,Due From Projects:Freeman,Other Current Assets,Other Current Assets,Mirror of Due To Corp:Freeman
+12510,Due From Projects:Carlo,Other Current Assets,Other Current Assets,Mirror of Due To Corp:Carlo
+12511,Due From Projects:Ledges,Other Current Assets,Other Current Assets,Mirror of Due To Corp:Ledges
+12512,Due From Projects:RM Texas,Other Current Assets,Other Current Assets,Mirror of Due To Corp:RM Texas
+12513,Due From Projects:Elephant Rock,Other Current Assets,Other Current Assets,Mirror of Due To Corp:Elephant Rock
+12514,Due From Projects:EJH,Other Current Assets,Other Current Assets,Mirror of Due To Corp:EJH
+12515,Due From Projects:Dominus,Other Current Assets,Other Current Assets,Mirror of Due To Corp:Dominus
+12516,Due From Projects:Rock Creek Acq,Other Current Assets,Other Current Assets,Mirror of Due To Corp:Rock Creek Acq
+12517,Due From Projects:Camden,Other Current Assets,Other Current Assets,Mirror of Due To Corp:Camden
+12518,Due From Projects:Ensign,Other Current Assets,Other Current Assets,Mirror of Due To Corp:Ensign
+13900,Land Held for Sale:HLE,Other Current Assets,Other Current Assets,HLE entitlement-stage land - carried at cost until sale
+14000,Investment in Projects,Other Current Assets,Other Current Assets,Parent - one sub per HOLDING x PROJECT pair (allocation map)
+14001,Investment in Projects:12SB-Lykos,Other Current Assets,Other Current Assets,Lykos stake in 12SB - class 04 Lykos
+14011,Investment in Projects:12SB-Aubrey,Other Current Assets,Other Current Assets,Aubrey stake in 12SB
+14002,Investment in Projects:HLN-Providence,Other Current Assets,Other Current Assets,Providence stake in HLN - class 05 Providence
+14003,Investment in Projects:Union-Lazarus,Other Current Assets,Other Current Assets,Lazarus stake in Union - class 06 Lazarus
+14013,Investment in Projects:Union-STV,Other Current Assets,Other Current Assets,STV LLC stake in Union - class 03 STV LLC
+14004,Investment in Projects:Madison-Lykos,Other Current Assets,Other Current Assets,Lykos stake in Madison
+14014,Investment in Projects:Madison-AW1,Other Current Assets,Other Current Assets,AW1 stake in Madison - class 07 AW1
+14005,Investment in Projects:Quincy-STDG,Other Current Assets,Other Current Assets,STDG stake in Quincy - class 02 STDG
+14015,Investment in Projects:Quincy-Lazarus,Other Current Assets,Other Current Assets,Lazarus stake in Quincy
+14006,Investment in Projects:Vic-Exult,Other Current Assets,Other Current Assets,Exult stake in Vic - class 11 Exult
+14016,Investment in Projects:Vic-Orion,Other Current Assets,Other Current Assets,Orion stake in Vic - class 09 Orion
+14026,Investment in Projects:Vic-Charis,Other Current Assets,Other Current Assets,Charis stake in Vic - class 10 Charis
+14007,Investment in Projects:SumElite-Providence,Other Current Assets,Other Current Assets,Providence 42.165% Executive stake in Summa Elite
+14017,Investment in Projects:SumElite-STV,Other Current Assets,Other Current Assets,STV LLC stake in Summa Elite
+14008,Investment in Projects:Ventura-STDG,Other Current Assets,Other Current Assets,STDG stake in Ventura
+14009,Investment in Projects:Freeman-Providence,Other Current Assets,Other Current Assets,Providence stake in Freeman
+14010,Investment in Projects:Ledges-Providence,Other Current Assets,Other Current Assets,Providence stake in Ledges - class 05
+14020,Investment in Projects:Ledges-Aubrey,Other Current Assets,Other Current Assets,Aubrey 12% direct stake in Ledges
+14012,Investment in Projects:RMTexas-Lazarus,Other Current Assets,Other Current Assets,Lazarus stake in RM Texas - class 06
+14022,Investment in Projects:RMTexas-Aubrey,Other Current Assets,Other Current Assets,Aubrey 0.42% direct in RM Texas
+14018,Investment in Projects:ElephRock-Providence,Other Current Assets,Other Current Assets,Providence stake in Elephant Rock
+14019,Investment in Projects:Carlo-AW1,Other Current Assets,Other Current Assets,AW1 50% stake in Carlo (Erin Hendricks holds other 50% - outside)
+14029,Investment in Projects:EJH-TBD,Other Current Assets,Other Current Assets,EJH holder TBD - confirm OA
+14030,Investment in Projects:Dominus-Aubrey,Other Current Assets,Other Current Assets,Aubrey 70% direct stake in Dominus
+14031,Investment in Projects:RockCreekAcq-AW1,Other Current Assets,Other Current Assets,AW1 25% stake in Rock Creek Acquisitions LLC
+14032,Investment in Projects:SumElite-ElephRock,Other Current Assets,Other Current Assets,Elephant Rock LLC 1.615% stake in Summa Elite (IC equity)
+14033,Investment in Projects:Camden-Lazarus,Other Current Assets,Other Current Assets,Lazarus stake in Camden Crossing
+14034,Investment in Projects:Ensign-Lazarus,Other Current Assets,Other Current Assets,Lazarus stake in Ensign (wind-down - mirror of realm A capital)
+20300,Accrued Expenses,Other Current Liabilities,Other Current Liabilities,Period-end accruals
+21100,Comm Payable - Watson (2%),Other Current Liabilities,Other Current Liabilities,"CEO commission - PARENT ONLY, class 90"
+21200,Comm Payable - Christensen (1%),Other Current Liabilities,Other Current Liabilities,President commission - Porter Christensen - class 90
+22500,Due To Projects,Other Current Liabilities,Other Current Liabilities,"Parent - IC liability leg, one sub per project entity"
+22501,Due To Projects:12SB,Other Current Liabilities,Other Current Liabilities,Mirror of partnership-file Due From Corp:12SB
+22502,Due To Projects:HLN,Other Current Liabilities,Other Current Liabilities,Mirror of Due From Corp:HLN
+22503,Due To Projects:Union,Other Current Liabilities,Other Current Liabilities,Mirror of Due From Corp:Union
+22504,Due To Projects:Madison,Other Current Liabilities,Other Current Liabilities,Mirror of Due From Corp:Madison
+22505,Due To Projects:Quincy,Other Current Liabilities,Other Current Liabilities,Mirror of Due From Corp:Quincy
+22506,Due To Projects:Vic,Other Current Liabilities,Other Current Liabilities,Mirror of Due From Corp:Vic
+22507,Due To Projects:Summa Elite,Other Current Liabilities,Other Current Liabilities,Mirror of Due From Corp:Summa Elite
+22508,Due To Projects:Ventura,Other Current Liabilities,Other Current Liabilities,Mirror of Due From Corp:Ventura
+22509,Due To Projects:Freeman,Other Current Liabilities,Other Current Liabilities,Mirror of Due From Corp:Freeman
+22510,Due To Projects:Carlo,Other Current Liabilities,Other Current Liabilities,Mirror of Due From Corp:Carlo
+22511,Due To Projects:Ledges,Other Current Liabilities,Other Current Liabilities,Mirror of Due From Corp:Ledges
+22512,Due To Projects:RM Texas,Other Current Liabilities,Other Current Liabilities,Mirror of Due From Corp:RM Texas
+22513,Due To Projects:Elephant Rock,Other Current Liabilities,Other Current Liabilities,Mirror of Due From Corp:Elephant Rock
+22514,Due To Projects:EJH,Other Current Liabilities,Other Current Liabilities,Mirror of Due From Corp:EJH
+22515,Due To Projects:Dominus,Other Current Liabilities,Other Current Liabilities,Mirror of Due From Corp:Dominus
+22516,Due To Projects:Rock Creek Acq,Other Current Liabilities,Other Current Liabilities,Mirror of Due From Corp:Rock Creek Acq
+22517,Due To Projects:Camden,Other Current Liabilities,Other Current Liabilities,Mirror of Due From Corp:Camden
+22518,Due To Projects:Ensign,Other Current Liabilities,Other Current Liabilities,Mirror of Due From Corp:Ensign
+30100,Member Equity,Equity,Partner's Equity,Parent - one sub per corporate entity (class must match)
+30101,Member Equity:STVE,Equity,Partner's Equity,STV Entitlement Services
+30102,Member Equity:STDG,Equity,Partner's Equity,Summa Terra Development Group
+30103,Member Equity:STV LLC,Equity,Partner's Equity,Summa Terra Ventures LLC
+30104,Member Equity:Lykos,Equity,Partner's Equity,Lykos Acquisitions
+30105,Member Equity:Providence,Equity,Partner's Equity,Providence Partners
+30106,Member Equity:Lazarus,Equity,Partner's Equity,Lazarus Investments
+30107,Member Equity:AW1,Equity,Partner's Equity,AW1 LLC
+30108,Member Equity:AW2,Equity,Partner's Equity,AW2 LLC
+30109,Member Equity:Orion,Equity,Partner's Equity,Orion Investing
+30110,Member Equity:Charis,Equity,Partner's Equity,Charis Acquisitions
+30111,Member Equity:Exult,Equity,Partner's Equity,Exult Assets
+30112,Member Equity:Aubrey Partners,Equity,Partner's Equity,Aubrey Partners LLC (winding down)
+30113,Member Equity:Liberation,Equity,Partner's Equity,Liberation Development (winding down)
+30114,Member Equity:WFW,Equity,Partner's Equity,Wealth Follows Worth (winding down)
+30115,Member Equity:STV CM,Equity,Partner's Equity,STV CM LLC (formed 4-2-2026 - the fee entity)
+30116,Member Equity:HLE,Equity,Partner's Equity,HLE - Hunters Landing East
+40200,Developer Fee Income,Income,Service/Fee Income,5% dev/CM fee - class = 15 STV CM (universal per 7-2-26 OAEAs) - base varies per OAEA
+40210,Draw Fee Income,Income,Service/Fee Income,Flat $1000/draw (Madison practice) - class 15 STV CM
+40220,Accounting Fee Income,Income,Service/Fee Income,$50/hr capped $500/mo per entity per OAEA - class 15 STV CM
+40230,PM Oversight Fee Income,Income,Service/Fee Income,1.0-1.5% of gross operating income post-CO per OAEA - class 15 STV CM
+40300,Management Fee Income,Income,Service/Fee Income,Other mgmt-co income
+40400,Reimbursement Income,Income,Service/Fee Income,Cost reimbursements
+60200,CEO Commission Expense (2%),Expenses,Other Miscellaneous Service Cost,Watson - paid from fee earned - class 90
+60300,Pres Commission Expense (1%),Expenses,Other Miscellaneous Service Cost,Porter Christensen - paid from fee earned - class 90
+70100,Salaries & Wages,Expenses,Other Miscellaneous Service Cost,Mgmt-co payroll (allocate by class)
+70200,Office / Software / Rightworks,Expenses,Other Miscellaneous Service Cost,G&A
+70300,Professional Fees (CPA/Legal),Expenses,Other Miscellaneous Service Cost,Outside services
+70400,Insurance,Expenses,Other Miscellaneous Service Cost,Allocate by class where direct
+70700,Marketing,Expenses,Other Miscellaneous Service Cost,Corporate
+80100,Other Income / Expense,Other Income,Other Miscellaneous Income,Non-operating
