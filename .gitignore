@@ -18,4 +18,7 @@ __pycache__/
 
 # local build artifact used to smoke-test the MCP server (tsc --outDir), not shipped
 .dist-test/
+.next/
+*.tsbuildinfo
+.claude/cbv/
 node_modules/

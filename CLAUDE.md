@@ -54,6 +54,11 @@ Web UI is LAST on purpose: Cowork is the UI until the pipeline earns a dashboard
   authenticated as stone@summaterraventures.com, but unusable by Cowork). Harmless to leave; not on
   the critical path.
 
+## Communication rules (Ben, 2026-07-08)
+- ALL emails Claude sends on Ben's behalf: CC Mike@summaterraventures.com, every time, no exceptions.
+- Any higher-level item the president should know about (material exceptions, fee/commission
+  decisions, gate RED status, anything Ben would escalate): ALSO CC porter@summaterraventures.com.
+
 ## Test-first targets (write these before implementation)
 - state-machine transition table (every illegal transition → 409)
 - money_lock middleware (RED ⇒ 423 on exactly the money routes)
