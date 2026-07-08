@@ -1,3 +1,8 @@
+> **NOTE (architecture-cartographer, 2026-07-08):** despite the filename, this file contains zero
+> `- [ ]` checklist tasks — it is prose, byte-similar to `SPEC_proofrail_v2_0_CONSOLIDATED.md`, not
+> a real task plan. Any tool (ralph-wiggum-loop, continuous-build-verify, etc.) expecting a real
+> `- [ ]` checklist at this path needs a freshly-scaffolded plan, not this content.
+
 # SPEC — ProofRail v2.4.0 (CONSOLIDATED — the only document the implementer reads)
 
 ```

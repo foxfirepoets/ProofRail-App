@@ -5,6 +5,11 @@ gmail-mcp-server/.gauth.json
 gmail-mcp-server/.oauth2.*.json
 gmail-mcp-server/node_modules/
 gmail-mcp-server/dist/
+# same patterns, anchored under archive/ too — gmail-mcp-server moves there (see archive/README.md)
+archive/gmail-mcp-server/.gauth.json
+archive/gmail-mcp-server/.oauth2.*.json
+archive/gmail-mcp-server/node_modules/
+archive/gmail-mcp-server/dist/
 
 # operational data (contains business content)
 logs/

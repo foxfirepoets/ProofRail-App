@@ -6,9 +6,25 @@ SwarmSync Invoice-Proof / Verify-API / Audit-Proof at every material action.
 Cowork = cognition (email, parsing, approvals-by-chat). This app = physics
 (state machines, proofs, QBO writes, nightly gates). MCP = the seam.
 
-## Source of truth
-SPEC_proofrail_v2_0_CONSOLIDATED.md — THE spec (merges v1.0-v1.3). Anything below
-v4/v2.0 is history, not instruction (see CARTOGRAPHY supersession ledger).
+## Source of truth — TWO TRACKS, do not conflate them
+1. **What Cowork actually operates today (live, real, binding):** `docs/OWNER_UPDATES_2026-07-06.md`
+   (overrides everything below it) + `docs/*_SPEC.md` + `scripts/*.py` + `cowork_prompts/*.md` +
+   `COWORK_START_HERE.md`. This is the local-scripts pipeline: real SwarmSync InvoiceProof calls
+   (`scripts/build_invoiceproof_packet.py --send`), real QBO sandbox writes (`scripts/qbo_*.py`),
+   real audit logs (`logs/*.jsonl`). Follow this track for any change to what Cowork does hour-to-hour.
+2. **Target architecture for the future app (not yet live):** SPEC_proofrail_v2_0_CONSOLIDATED.md
+   (merges v1.0-v1.3; anything below v4/v2.0 is history — see CARTOGRAPHY supersession ledger) +
+   this file + `prisma/schema.prisma` + `mcp/tool-contracts.ts`. This describes the Next.js/NestJS/MCP
+   app scaffolded in `src/` and deployed to Render. As of 2026-07-08 its QboClient, ProofClient (for
+   VerifyAPI/AuditProof), and repository are still fake/local stubs (`src/proofrail/container.ts`) —
+   InvoiceProof was reintegrated to call the real SwarmSync API (`SwarmSyncProofClient`), but QBO
+   writes and persistence are not real yet. Do not treat a tool call succeeding through this app's
+   MCP connector as proof that anything reached real QBO — check `container.ts` for what's actually
+   wired before trusting it.
+
+**Which track wins on conflict:** track 1 is authoritative for present-day operator behavior. Track 2
+is authoritative for what the future app should eventually do. If they disagree about *how something
+works right now*, track 1 is correct.
 
 ## Stack (copy SwarmSync patterns exactly — see swarmsync-ai skill)
 Next.js 14 (Netlify) · NestJS ESM w/ .js import suffixes (Render) · Prisma 6 legacy mode +
@@ -16,14 +32,24 @@ Supabase Postgres (NEW isolated project) · Trigger.dev v4 tasks · MCP module p
 mcp/ + mcp-builder skill. No Stripe. No RBAC (solo operator v1).
 
 ## In this bundle
-- prisma/schema.prisma   — v2, C2 deltas applied, prisma@6 validate clean. Enums ARE the
-  state machines; EntityRegistry carries the law; GcCodeMap + MemberVendor included.
-- mcp/tool-contracts.ts  — strict-TS-clean. 11 tools; the only door Cowork gets.
-- ../cowork-skills/      — 4 domain skills: operator / coding-rules / drawsheets /
-  oaea-registry. Cowork also installs 4 instrument skills: gmail, pdf-mastery,
-  google-workspace, google-sheets-mastermind (domain decides, instruments execute).
-- ../COA_*_v4.iif        — QBO dimensional design (17 partnership classes, 15 STV CM parent).
-- ../obgen/              — seeding CLI (re-target emit to QBO API; import shared gates pkg).
+(Paths below are relative to this repo root — corrected 2026-07-08 after architecture-cartographer
+found the original paths assumed a different folder layout, per-package `proofrail/`, that no
+longer matches how this repo is actually laid out. `proofrail/prisma/` and `proofrail/mcp/` were
+byte-identical duplicates of the root copies below and have been archived to `archive/proofrail/`.)
+- `schema.prisma` (repo root) — v2, C2 deltas applied, prisma@6 validate clean. Enums ARE the
+  state machines; EntityRegistry carries the law; GcCodeMap + MemberVendor included. This is the
+  copy `package.json`'s `prisma:validate` script actually uses — treat it as canonical.
+- `tool-contracts.ts` (repo root) — strict-TS-clean. 11 tools; the frozen design reference for
+  what Cowork gets. (The actual deployed MCP server defines these tools inline via zod in
+  `src/api/mcp-server.ts` — this file is documentation, not imported code.)
+- `cowork-skills/` (repo root subdirectory, not a sibling) — 4 domain skills: operator /
+  coding-rules / drawsheets / oaea-registry. Cowork also installs 4 instrument skills: gmail,
+  pdf-mastery, google-workspace, google-sheets-mastermind (domain decides, instruments execute).
+- `COA_*_v4.iif` — QBO dimensional design (17 partnership classes, 15 STV CM parent). Confirm
+  current location before relying on this path; not verified in the 2026-07-08 cartographer pass.
+- `obgen/` (repo root subdirectory) — seeding CLI (re-target emit to QBO API; import shared gates
+  pkg). Also the verified reuse source for the QBB→QBO migration pipeline (see
+  `docs/SPEC_QBB_TO_QBO_MIGRATION.md`).
 
 ## Non-negotiables (each has an acceptance test — see spec DoD + A8/B6)
 1. Fail closed: no proof ⇒ no completion. No bypass flag exists anywhere.

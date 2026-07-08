@@ -30,6 +30,12 @@ export interface ProofRailRepository {
   seedVendorHistory(records: VendorHistoryRecord[]): Promise<void>;
   audit(record: AuditRecord): Promise<void>;
   auditCount(): Promise<number>;
+  /**
+   * Fail-closed QBO Class resolution (Ben's directive, 2026-07-08): project/entity/item/vendor/
+   * context -> QBO Class name. Returns undefined when no mapping row matches - callers MUST halt
+   * the post on undefined (PR-043), never guess or default to a Class.
+   */
+  resolveQboClass(input: { entity?: string; project?: string; item?: string; vendor?: string; context?: string }): Promise<string | undefined>;
 }
 
 export class InMemoryProofRailRepository implements ProofRailRepository {
@@ -138,5 +144,27 @@ export class InMemoryProofRailRepository implements ProofRailRepository {
 
   async auditCount(): Promise<number> {
     return this.audits.length;
+  }
+
+  private readonly classMappings: { entity?: string; project?: string; item?: string; vendor?: string; context?: string; qboClass: string; priority: number }[] = [];
+
+  /** Test helper - InMemoryProofRailRepository has no migration to seed rows into. */
+  seedClassMapping(row: { entity?: string; project?: string; item?: string; vendor?: string; context?: string; qboClass: string; priority?: number }): void {
+    this.classMappings.push({ ...row, priority: row.priority ?? 100 });
+  }
+
+  async resolveQboClass(input: { entity?: string; project?: string; item?: string; vendor?: string; context?: string }): Promise<string | undefined> {
+    const candidates = this.classMappings.filter((m) =>
+      (m.entity === undefined || m.entity === input.entity) &&
+      (m.project === undefined || m.project === input.project) &&
+      (m.item === undefined || m.item === input.item) &&
+      (m.vendor === undefined || m.vendor === input.vendor) &&
+      (m.context === undefined || m.context === input.context),
+    );
+    if (candidates.length === 0) return undefined;
+    const specificity = (m: (typeof candidates)[number]) =>
+      [m.entity, m.project, m.item, m.vendor, m.context].filter((v) => v !== undefined).length;
+    candidates.sort((a, b) => specificity(b) - specificity(a) || a.priority - b.priority);
+    return candidates[0].qboClass;
   }
 }

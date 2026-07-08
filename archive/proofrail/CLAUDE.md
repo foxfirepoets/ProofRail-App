@@ -1,3 +1,7 @@
+> **ARCHIVED 2026-07-08.** This was `proofrail/CLAUDE.md`. Its content is now superseded by the
+> root `CLAUDE.md` (which has the corrected "In this bundle" paths and the "Source of truth — TWO
+> TRACKS" section). Kept here for history only — do not edit or treat as live instruction.
+
 # CLAUDE.md — ProofRail (read before writing any code)
 
 ## What this is
@@ -7,8 +11,16 @@ Cowork = cognition (email, parsing, approvals-by-chat). This app = physics
 (state machines, proofs, QBO writes, nightly gates). MCP = the seam.
 
 ## Source of truth
-SPEC_proofrail_v2_0_CONSOLIDATED.md — THE spec (merges v1.0-v1.3). Anything below
-v4/v2.0 is history, not instruction (see CARTOGRAPHY supersession ledger).
+This directory (`proofrail/`) describes the TARGET architecture for the future app — not what
+Cowork operates today. For what's actually live and binding right now, read `../CLAUDE.md`'s
+"Source of truth — TWO TRACKS" section first: today's real pipeline is `../docs/OWNER_UPDATES_2026-07-06.md`
++ `../docs/*_SPEC.md` + `../scripts/*.py`, not this directory.
+
+Within the target-architecture track: SPEC_proofrail_v2_0_CONSOLIDATED.md — THE spec (merges
+v1.0-v1.3). Anything below v4/v2.0 is history, not instruction (see CARTOGRAPHY supersession
+ledger). As of 2026-07-08, the actual runtime code lives in `../src/` (not `proofrail/mcp/` —
+that's the frozen tool-contract design doc, not the deployed server); `../src/proofrail/container.ts`
+is the single place that shows what's real vs stubbed right now.
 
 ## Stack (copy SwarmSync patterns exactly — see swarmsync-ai skill)
 Next.js 14 (Netlify) · NestJS ESM w/ .js import suffixes (Render) · Prisma 6 legacy mode +
