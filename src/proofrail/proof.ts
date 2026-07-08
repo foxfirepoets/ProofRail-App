@@ -38,29 +38,33 @@ export class LocalProofClient implements ProofClient {
 }
 
 /**
- * Real SwarmSync client - both InvoiceProof and VerifyAPI/AuditProof are now real, ported from
- * the actual swarmsync source repo (C:\...\Github\swarmsync), not invented:
+ * Real SwarmSync client. InvoiceProof is real and empirically verified working end-to-end
+ * (live test, 2026-07-08: `sa_...` key -> HTTP 200 from POST /invoice-proof/scan with real
+ * findings). VerifyAPI/AuditProof's wire contract (POST /api/verify, source_type-discriminated)
+ * is also real and ported from the actual swarmsync source, but the auth story needed two rounds
+ * of static analysis AND a live test to get right - record it plainly so nobody re-guesses:
  *
- * - InvoiceProof: `POST /invoice-proof/scan` (apps/api/src/modules/invoice-proof/invoice-proof.controller.ts).
- *   AUTH CORRECTION vs docs/INVOICEPROOF_ROUTING_SPEC.md: that doc claims `ssk_live_` for this
- *   endpoint - wrong. The controller uses the base JwtAuthGuard (route is @Public(), scan itself
- *   accepts unauthenticated calls too), and the real service-account credential format is an
- *   `sa_`-prefixed key via `Authorization: Bearer sa_...` or `X-Api-Key` (jwt-auth.guard.ts:113-116,
- *   ServiceAccountsService.validateApiKey). SWARMSYNC_API_KEY in .env is already `sa_`-prefixed, so
- *   this client's existing Bearer usage is correct by coincidence - flagging the doc bug for a
- *   future fix to INVOICEPROOF_ROUTING_SPEC.md, not a code bug here.
+ * Round 1 (static read of verify-api-auth.guard.ts only): concluded VerifyAPI needs a dedicated
+ * `ssk_live_` SwarmScore key, `sa_` wouldn't work.
+ * Round 2 (static read of key-issuance code, prompted by Ben's dashboard screenshot showing the
+ * "VerifyAPI" button issuing an `sa_` key): concluded the guard falls through to accept `sa_` too,
+ * so one key should serve all three products.
+ * Round 3 (LIVE TEST, 2026-07-08): round 2 was WRONG. The exact same `sa_` key that returns
+ * HTTP 200 from /invoice-proof/scan returns HTTP 401 "Invalid API key" from /api/verify. Static
+ * code reading missed something real at runtime (scoping, entitlement lookup, or a guard version
+ * mismatch) - trust the live result over the code trace.
  *
- * - VerifyAPI + AuditProof: SAME real endpoint, `POST /api/verify`
- *   (apps/api/src/modules/verification/verify-api.controller.ts:2171). They are NOT two separate
- *   products at the wire level - discriminated by `source_type` (required enum: api_output |
- *   agent_activity | audit_proof | document | workflow_event | software_delivery) and, for audit
- *   bundles specifically, `task: "audit_proof"` (triggers the additional Conduit dispatch,
- *   verify-api.controller.ts:3341-3366). Auth is a DIFFERENT credential than InvoiceProof: an
- *   `ssk_live_`-prefixed key via `Authorization: Bearer` or `X-API-Key`
- *   (verify-api-auth.guard.ts:17-73, SwarmScoreApiKey.keyHash lookup, status must be ACTIVE).
- *   No `ssk_live_` key exists anywhere in .env as of 2026-07-08 - only the InvoiceProof `sa_` key
- *   is present. Until SWARMSYNC_VERIFY_API_KEY is set, these two methods fail over to the same
- *   honest local chain-hash stamp as before (never silently pretend to be real without the key).
+ * Conclusion: VerifyAPI/AuditProof genuinely need a dedicated `ssk_live_` key that this account
+ * has not yet obtained. The SwarmSync dashboard's general "API Keys" page (Agent Market /
+ * VerifyAPI / Routing buttons) does NOT issue this format - "VerifyAPI" there is a UI label only
+ * and creates the same `sa_` service-account type as "Agent Market". A genuine `ssk_live_` key
+ * must come from wherever the dedicated SwarmScore product setup lives (not yet located - ask
+ * SwarmSync support or look for a "SwarmScore" section distinct from the general API Keys page).
+ * A `sk-ss-...` ("Routing"/model-routing) key is a different product entirely and does not
+ * authenticate to /api/verify OR /invoice-proof/scan - never put one in SWARMSYNC_VERIFYAPI_KEY.
+ *
+ * Until a real `ssk_live_` key exists, recordWorkflowEvent/recordAuditBundle fall back to the
+ * same honest local chain-hash stamp as before - never silently pretend to be real without it.
  */
 export class SwarmSyncProofClient implements ProofClient {
   private readonly baseUrl: string;
@@ -80,9 +84,18 @@ export class SwarmSyncProofClient implements ProofClient {
       );
     }
     this.apiKey = apiKey;
-    // Optional on purpose - VerifyAPI/AuditProof use a different (ssk_live_) key that doesn't
-    // exist yet. Falls back to the local stamp below when absent - see class doc comment.
-    this.verifyApiKey = options?.verifyApiKey ?? process.env.SWARMSYNC_VERIFY_API_KEY;
+    const verifyOverride = options?.verifyApiKey ?? process.env.SWARMSYNC_VERIFYAPI_KEY;
+    if (verifyOverride && !verifyOverride.startsWith("ssk_live_")) {
+      // Empirically confirmed 2026-07-08: sa_ keys get a real HTTP 401 from /api/verify, so don't
+      // accept a non-ssk_live_ value here and silently call an endpoint that will just fail.
+      throw new Error(
+        `SWARMSYNC_VERIFYAPI_KEY is set but doesn't start with ssk_live_ - it looks like a key from ` +
+          `the wrong product (e.g. a Routing/model-routing 'sk-ss-...' key). That will not ` +
+          `authenticate to /api/verify (confirmed by live test) - remove it or replace it with a ` +
+          `real ssk_live_ SwarmScore key.`,
+      );
+    }
+    this.verifyApiKey = verifyOverride;
   }
 
   async verifyInvoice(input: unknown): Promise<{ verdict: "PASS" | "FLAG"; flags: string[]; proof: ProofStamp }> {
@@ -153,7 +166,7 @@ export class SwarmSyncProofClient implements ProofClient {
     const response = await fetch(`${this.baseUrl}/api/verify`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${this.verifyApiKey}`,
+        Authorization: `Bearer ${this.verifyApiKey!}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
