@@ -372,6 +372,13 @@ export function startMcpServer(): void {
   // on initialize. This is the reference pattern from the MCP SDK docs for Streamable HTTP.
   const sessions = new Map<string, Session>();
 
+  app.get("/mcp", requireBearerAuth, (_req, res) => {
+    res
+      .status(405)
+      .set("Allow", "POST, DELETE")
+      .json({ error: { code: "METHOD_NOT_ALLOWED", message: "Use POST /mcp for Streamable HTTP requests." } });
+  });
+
   app.post("/mcp", requireBearerAuth, async (req, res) => {
     const existingSessionId = req.header("mcp-session-id");
     let session = existingSessionId ? sessions.get(existingSessionId) : undefined;

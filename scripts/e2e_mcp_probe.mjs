@@ -31,6 +31,8 @@ const headers = {
   "Content-Type": "application/json",
 };
 
+const getResponse = await fetch(`${base}/mcp`, { method: "GET", headers: { Authorization: headers.Authorization, Accept: "text/event-stream" } });
+
 const initResponse = await fetch(`${base}/mcp`, {
   method: "POST",
   headers,
@@ -53,6 +55,7 @@ const output = {
   tokenType: token.token_type,
   protectedResourceStatus: protectedResourceResponse.status,
   protectedResource: protectedResource.resource,
+  getMcpStatus: getResponse.status,
   initStatus: initResponse.status,
   sessionPresent: Boolean(sessionId),
   initPreview: initText.slice(0, 220),
