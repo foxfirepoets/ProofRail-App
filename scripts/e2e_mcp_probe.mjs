@@ -22,6 +22,9 @@ const tokenResponse = await fetch(`${base}/oauth/token`, {
 });
 const token = await tokenResponse.json();
 
+const protectedResourceResponse = await fetch(`${base}/.well-known/oauth-protected-resource/mcp`);
+const protectedResource = await protectedResourceResponse.json();
+
 const headers = {
   Authorization: `Bearer ${token.access_token}`,
   Accept: "application/json, text/event-stream",
@@ -48,6 +51,8 @@ const sessionId = initResponse.headers.get("mcp-session-id");
 const output = {
   tokenStatus: tokenResponse.status,
   tokenType: token.token_type,
+  protectedResourceStatus: protectedResourceResponse.status,
+  protectedResource: protectedResource.resource,
   initStatus: initResponse.status,
   sessionPresent: Boolean(sessionId),
   initPreview: initText.slice(0, 220),

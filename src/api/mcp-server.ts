@@ -218,13 +218,17 @@ function baseUrl(req: Request): string {
   return `${proto}://${req.header("host")}`;
 }
 
+function resourceUrl(req: Request): string {
+  return `${baseUrl(req)}/mcp`;
+}
+
 function requireBearerAuth(req: Request, res: Response, next: NextFunction): void {
   const header = req.header("authorization") ?? "";
   const presented = header.replace(/^Bearer\s+/i, "");
   if (!presented || presented !== MCP_KEY) {
     res
       .status(401)
-      .set("WWW-Authenticate", `Bearer resource_metadata="${baseUrl(req)}/.well-known/oauth-protected-resource"`)
+      .set("WWW-Authenticate", `Bearer resource_metadata="${baseUrl(req)}/.well-known/oauth-protected-resource/mcp"`)
       .json({ error: { code: "UNAUTHORIZED", message: "Missing or invalid bearer token." } });
     return;
   }
@@ -252,10 +256,13 @@ export function startMcpServer(): void {
   app.get("/healthz", (_req, res) => res.json({ ok: true, service: "proofrail-mcp" }));
 
   // -- OAuth2 discovery + token endpoint (see comment above requireBearerAuth) --
-  app.get("/.well-known/oauth-protected-resource", (req, res) => {
+  const protectedResourceMetadata = (req: Request, res: Response) => {
     const base = baseUrl(req);
-    res.json({ resource: base, authorization_servers: [base] });
-  });
+    res.json({ resource: resourceUrl(req), authorization_servers: [base] });
+  };
+
+  app.get("/.well-known/oauth-protected-resource", protectedResourceMetadata);
+  app.get("/.well-known/oauth-protected-resource/mcp", protectedResourceMetadata);
 
   app.get("/.well-known/oauth-authorization-server", (req, res) => {
     const base = baseUrl(req);
