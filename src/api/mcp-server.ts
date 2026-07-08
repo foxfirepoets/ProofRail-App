@@ -19,7 +19,7 @@
  * section 10 - this file doesn't paper over that; see the README note in this repo for honest status.
  */
 import express, { type NextFunction, type Request, type Response } from "express";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
@@ -186,15 +186,30 @@ function buildServer(): McpServer {
   return server;
 }
 
-// OAuth2 client-credentials shim: Cowork's "Add custom connector" screen only offers a plain
-// URL field plus optional OAuth Client ID/Secret - there is no bare API-key field. So this
-// server also speaks a minimal OAuth2 client_credentials grant (RFC 6749) + the discovery
+// OAuth2 shim: Cowork's "Add custom connector" screen only offers a plain URL field plus
+// optional OAuth Client ID/Secret - there is no bare API-key field. Cowork's "Connect" button
+// drives the full Authorization Code flow (browser redirect to /authorize, not just a token
+// POST) - confirmed by hitting "Cannot GET /authorize" on the first attempt. So this server
+// implements both grants: authorization_code (what the Connect button actually uses) and
+// client_credentials (kept for any client that wants the simpler path), plus the discovery
 // documents MCP clients look for (RFC 8414 authorization-server metadata, RFC 9728
-// protected-resource metadata). The token it issues IS PROOFRAIL_MCP_KEY itself, so the
-// existing bearer check on /mcp below needs no changes - Cowork just gets there via one extra
-// hop (client_id/client_secret -> access_token -> Authorization: Bearer <token>).
+// protected-resource metadata). Every grant issues PROOFRAIL_MCP_KEY itself as the access
+// token, so the existing bearer check on /mcp below needs no changes.
+//
+// Single-tenant simplification: there's exactly one user (Ben) and one pre-registered client
+// (the Client ID/Secret he pastes into Cowork's screen), so /authorize auto-approves instead of
+// showing a real consent screen - there's no second party whose consent would mean anything here.
 const OAUTH_CLIENT_ID = process.env.PROOFRAIL_OAUTH_CLIENT_ID ?? "proofrail-cowork";
 const OAUTH_CLIENT_SECRET = MCP_KEY; // reuse the same secret Cowork puts in "OAuth Client Secret"
+
+interface AuthCode {
+  clientId: string;
+  redirectUri: string;
+  codeChallenge?: string;
+  codeChallengeMethod?: string;
+  expiresAt: number;
+}
+const authCodes = new Map<string, AuthCode>();
 
 function baseUrl(req: Request): string {
   const configured = process.env.RENDER_EXTERNAL_URL ?? process.env.PUBLIC_BASE_URL;
@@ -246,11 +261,44 @@ export function startMcpServer(): void {
     const base = baseUrl(req);
     res.json({
       issuer: base,
+      authorization_endpoint: `${base}/authorize`,
       token_endpoint: `${base}/oauth/token`,
-      grant_types_supported: ["client_credentials"],
+      grant_types_supported: ["authorization_code", "client_credentials"],
+      response_types_supported: ["code"],
       token_endpoint_auth_methods_supported: ["client_secret_post", "client_secret_basic"],
-      response_types_supported: ["token"],
+      code_challenge_methods_supported: ["S256", "plain"],
     });
+  });
+
+  // Browser-facing leg of the Authorization Code flow: Cowork's "Connect" button navigates
+  // the user's browser here. Single-tenant auto-approve (see comment above authCodes) -
+  // straight to issuing a code and redirecting back, no login/consent form.
+  app.get("/authorize", (req, res) => {
+    const { response_type, client_id, redirect_uri, state, code_challenge, code_challenge_method } =
+      req.query as Record<string, string | undefined>;
+
+    if (response_type !== "code" || !redirect_uri) {
+      res.status(400).send("invalid_request: response_type must be 'code' and redirect_uri is required");
+      return;
+    }
+    if (client_id !== OAUTH_CLIENT_ID) {
+      res.status(401).send("invalid_client: unknown client_id");
+      return;
+    }
+
+    const code = randomUUID();
+    authCodes.set(code, {
+      clientId: client_id,
+      redirectUri: redirect_uri,
+      codeChallenge: code_challenge,
+      codeChallengeMethod: code_challenge_method,
+      expiresAt: Date.now() + 5 * 60_000, // 5 min, single-use, consumed in /oauth/token below
+    });
+
+    const redirect = new URL(redirect_uri);
+    redirect.searchParams.set("code", code);
+    if (state) redirect.searchParams.set("state", state);
+    res.redirect(302, redirect.toString());
   });
 
   app.post("/oauth/token", (req, res) => {
@@ -268,16 +316,47 @@ export function startMcpServer(): void {
       }
     }
 
-    if (body.grant_type !== "client_credentials") {
-      res.status(400).json({ error: "unsupported_grant_type" });
-      return;
-    }
-    if (clientId !== OAUTH_CLIENT_ID || clientSecret !== OAUTH_CLIENT_SECRET) {
-      res.status(401).json({ error: "invalid_client" });
+    if (body.grant_type === "authorization_code") {
+      const code = body.code;
+      const entry = code ? authCodes.get(code) : undefined;
+      if (!entry || entry.expiresAt < Date.now()) {
+        res.status(400).json({ error: "invalid_grant" });
+        return;
+      }
+      authCodes.delete(code!); // single-use
+
+      if (entry.clientId !== (clientId ?? OAUTH_CLIENT_ID) || (clientId && clientSecret !== OAUTH_CLIENT_SECRET)) {
+        res.status(401).json({ error: "invalid_client" });
+        return;
+      }
+      if (body.redirect_uri && body.redirect_uri !== entry.redirectUri) {
+        res.status(400).json({ error: "invalid_grant", error_description: "redirect_uri mismatch" });
+        return;
+      }
+      if (entry.codeChallenge) {
+        const verifier = body.code_verifier ?? "";
+        const computed =
+          entry.codeChallengeMethod === "plain" ? verifier : createHash("sha256").update(verifier).digest("base64url");
+        if (computed !== entry.codeChallenge) {
+          res.status(400).json({ error: "invalid_grant", error_description: "PKCE verification failed" });
+          return;
+        }
+      }
+
+      res.json({ access_token: MCP_KEY, token_type: "Bearer", expires_in: 3600 });
       return;
     }
 
-    res.json({ access_token: MCP_KEY, token_type: "Bearer", expires_in: 3600 });
+    if (body.grant_type === "client_credentials") {
+      if (clientId !== OAUTH_CLIENT_ID || clientSecret !== OAUTH_CLIENT_SECRET) {
+        res.status(401).json({ error: "invalid_client" });
+        return;
+      }
+      res.json({ access_token: MCP_KEY, token_type: "Bearer", expires_in: 3600 });
+      return;
+    }
+
+    res.status(400).json({ error: "unsupported_grant_type" });
   });
 
   // Streamable HTTP transport, STATEFUL mode: Cowork opens one session (initialize) and then
