@@ -26,7 +26,9 @@ import { z } from "zod";
 import { ProofRailError } from "../proofrail/errors.js";
 import { proofRailService } from "../proofrail/container.js";
 
-const PORT = Number(process.env.PROOFRAIL_MCP_PORT ?? 8787);
+// Render (and most PaaS hosts) assign the port via $PORT and route traffic only to that port.
+// PROOFRAIL_MCP_PORT stays as a local-dev override; $PORT wins when present.
+const PORT = Number(process.env.PORT ?? process.env.PROOFRAIL_MCP_PORT ?? 8787);
 const MCP_KEY = process.env.PROOFRAIL_MCP_KEY;
 
 if (!MCP_KEY) {
