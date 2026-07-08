@@ -40,6 +40,13 @@ export function deterministicRequestId(parts: string[]): string {
   return createHash("sha1").update(parts.join("|")).digest("hex").slice(0, 36);
 }
 
+/** "Madison Park:Vertical" -> "Vertical". Returns undefined if there's no ":phase" suffix - never guesses a phase. */
+export function derivePhaseFromProject(project: string): string | undefined {
+  const idx = project.lastIndexOf(":");
+  if (idx === -1 || idx === project.length - 1) return undefined;
+  return project.slice(idx + 1).trim();
+}
+
 /**
  * Real QBO sandbox client - OAuth + HTTP mechanics ported 1:1 from the verified, currently-working
  * scripts/qbo_common.py + scripts/qbo_create_sandbox_bill.py (Realm class, sandbox guard, deterministic
@@ -182,16 +189,25 @@ export class RealQboClient implements QboClient {
 
     // Fail-closed Class resolution (Ben's directive, 2026-07-08) - resolved BEFORE any other QBO
     // lookup so a missing mapping halts fast, before this line ever touches the sandbox.
+    // Class in Realm A is a cost PHASE (COWORK_START_HERE.md dimensional law: "Class = cost
+    // phase"), not an entity/vendor-specific thing - real seed data confirms exactly 5 phases
+    // (qbo Source Files/8_Classes_REALM_A_API_SEED.csv: Acquisition/Sitework/Vertical/
+    // Disposition/Operations), matching proofrail-coding-rules' project:phase convention
+    // ({Project}:{Acquisition|Sitework|Vertical|Disposition} / :Operations). The phase is the
+    // suffix of `project` after the last ":" - derive it and match on `context`, not on the full
+    // project string (which would need one row per exact project, an unbounded list we don't have).
+    const phase = derivePhaseFromProject(request.project);
     const qboClassName = await this.classResolver.resolveQboClass({
       entity: request.entity,
       project: request.project,
       item: request.item,
       vendor: request.vendor,
+      context: phase,
     });
     if (!qboClassName) {
       throw new ProofRailError(
         "PR-043",
-        `No Class mapping resolves for (entity=${request.entity}, project=${request.project}, item=${request.item}, vendor=${request.vendor}). Every QBO bill line requires Location + Class + Customer/Project + Item - ProofRail never guesses a Class or posts without one.`,
+        `No Class mapping resolves for (entity=${request.entity}, project=${request.project}, phase=${phase ?? "UNPARSEABLE"}, item=${request.item}, vendor=${request.vendor}). Every QBO bill line requires Location + Class + Customer/Project + Item - ProofRail never guesses a Class or posts without one.`,
         400,
       );
     }
