@@ -186,11 +186,31 @@ function buildServer(): McpServer {
   return server;
 }
 
+// OAuth2 client-credentials shim: Cowork's "Add custom connector" screen only offers a plain
+// URL field plus optional OAuth Client ID/Secret - there is no bare API-key field. So this
+// server also speaks a minimal OAuth2 client_credentials grant (RFC 6749) + the discovery
+// documents MCP clients look for (RFC 8414 authorization-server metadata, RFC 9728
+// protected-resource metadata). The token it issues IS PROOFRAIL_MCP_KEY itself, so the
+// existing bearer check on /mcp below needs no changes - Cowork just gets there via one extra
+// hop (client_id/client_secret -> access_token -> Authorization: Bearer <token>).
+const OAUTH_CLIENT_ID = process.env.PROOFRAIL_OAUTH_CLIENT_ID ?? "proofrail-cowork";
+const OAUTH_CLIENT_SECRET = MCP_KEY; // reuse the same secret Cowork puts in "OAuth Client Secret"
+
+function baseUrl(req: Request): string {
+  const configured = process.env.RENDER_EXTERNAL_URL ?? process.env.PUBLIC_BASE_URL;
+  if (configured) return configured.replace(/\/$/, "");
+  const proto = req.header("x-forwarded-proto") ?? req.protocol;
+  return `${proto}://${req.header("host")}`;
+}
+
 function requireBearerAuth(req: Request, res: Response, next: NextFunction): void {
   const header = req.header("authorization") ?? "";
   const presented = header.replace(/^Bearer\s+/i, "");
   if (!presented || presented !== MCP_KEY) {
-    res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Missing or invalid bearer token." } });
+    res
+      .status(401)
+      .set("WWW-Authenticate", `Bearer resource_metadata="${baseUrl(req)}/.well-known/oauth-protected-resource"`)
+      .json({ error: { code: "UNAUTHORIZED", message: "Missing or invalid bearer token." } });
     return;
   }
   next();
@@ -212,8 +232,53 @@ function isInitializeRequest(body: unknown): boolean {
 export function startMcpServer(): void {
   const app = express();
   app.use(express.json());
+  app.use(express.urlencoded({ extended: false })); // OAuth token requests are form-encoded per RFC 6749
 
   app.get("/healthz", (_req, res) => res.json({ ok: true, service: "proofrail-mcp" }));
+
+  // -- OAuth2 discovery + token endpoint (see comment above requireBearerAuth) --
+  app.get("/.well-known/oauth-protected-resource", (req, res) => {
+    const base = baseUrl(req);
+    res.json({ resource: base, authorization_servers: [base] });
+  });
+
+  app.get("/.well-known/oauth-authorization-server", (req, res) => {
+    const base = baseUrl(req);
+    res.json({
+      issuer: base,
+      token_endpoint: `${base}/oauth/token`,
+      grant_types_supported: ["client_credentials"],
+      token_endpoint_auth_methods_supported: ["client_secret_post", "client_secret_basic"],
+      response_types_supported: ["token"],
+    });
+  });
+
+  app.post("/oauth/token", (req, res) => {
+    const body = req.body as Record<string, string | undefined>;
+    let clientId = body.client_id;
+    let clientSecret = body.client_secret;
+
+    const authHeader = req.header("authorization") ?? "";
+    if (authHeader.startsWith("Basic ")) {
+      const decoded = Buffer.from(authHeader.slice(6), "base64").toString("utf8");
+      const sep = decoded.indexOf(":");
+      if (sep >= 0) {
+        clientId = decodeURIComponent(decoded.slice(0, sep));
+        clientSecret = decodeURIComponent(decoded.slice(sep + 1));
+      }
+    }
+
+    if (body.grant_type !== "client_credentials") {
+      res.status(400).json({ error: "unsupported_grant_type" });
+      return;
+    }
+    if (clientId !== OAUTH_CLIENT_ID || clientSecret !== OAUTH_CLIENT_SECRET) {
+      res.status(401).json({ error: "invalid_client" });
+      return;
+    }
+
+    res.json({ access_token: MCP_KEY, token_type: "Bearer", expires_in: 3600 });
+  });
 
   // Streamable HTTP transport, STATEFUL mode: Cowork opens one session (initialize) and then
   // makes many tools/list + tools/call requests against it, so the transport (and the McpServer
