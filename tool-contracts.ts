@@ -171,12 +171,32 @@ export interface LookupCodingResult {
   bank_baseline?: { acct_last4: string }; // for Cowork to spot a change before submit
 }
 
+// ───────────────────────── 12. void_transaction ─────────────────────────
+/** Ben's directive, 2026-07-10. VOID, not hard delete - zeroes the transaction but keeps it in
+ *  QBO's history/audit trail (standard accounting practice). Scoped to the same money boundary
+ *  as everything else here: Bill, Invoice, JournalEntry only, never BillPayment/Payment/Deposit/
+ *  Check. Money-lock gated (423 on a RED gate, same as send_draw/approve_fees) and requires
+ *  literal confirm:true plus a reason (>=10 chars) - no default sends, no unexplained voids. */
+export interface VoidTransactionInput {
+  entity_type: 'Bill' | 'Invoice' | 'JournalEntry';
+  qbo_txn_id: string;
+  reason: string;             // required, >= 10 chars - why this transaction is being voided
+  confirm: true;               // literal true - no default voids
+}
+export interface VoidTransactionResult {
+  entity_type: 'Bill' | 'Invoice' | 'JournalEntry';
+  qbo_txn_id: string;
+  operation: 'void' | 'delete';  // QBO only supports true void for Invoice; Bill/JournalEntry get a hard delete
+  voided: true;
+  proof: ProofStamp;
+}
+
 // ───────────────────────── registration ─────────────────────────
 export const PROOFRAIL_TOOLS = [
   'submit_intake', 'list_queue', 'approve', 'reject', 'get_gate_status',
   'reconcile_draw_sheet', 'build_draw', 'send_draw', 'run_fees', 'approve_fees',
-  'lookup_coding',
+  'lookup_coding', 'void_transaction',
 ] as const;
 // Auth: Authorization: Bearer sk_proofrail_...  (org-scoped, SwarmSync key pattern)
-// Mutating tools: submit_intake, approve, reject, send_draw, run_fees→approve_fees.
+// Mutating tools: submit_intake, approve, reject, send_draw, run_fees→approve_fees, void_transaction.
 // Every mutation → McpAuditLog row BEFORE response. Read tools are unlogged and cheap.

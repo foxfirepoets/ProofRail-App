@@ -90,6 +90,43 @@ describe("ProofRail highest-risk acceptance laws", () => {
     assert.equal(result.fee_runs.length, 1);
   });
 
+  it("void_transaction refuses without a reason", async () => {
+    const { service } = harness();
+    await service.saveGateRun("GREEN", [{ gate: "G-A", pass: true, summary: "Fresh GREEN" }]);
+    await assert.rejects(
+      () => service.voidTransaction({ entity_type: "Bill", qbo_txn_id: "bill_1", reason: "", confirm: true }),
+      (error: any) => error.code === "PR-002",
+    );
+  });
+
+  it("void_transaction is scoped to Bill/Invoice/JournalEntry only - never a payment entity", async () => {
+    const { qbo } = harness();
+    await assert.rejects(
+      () => qbo.voidTransaction({ entityType: "BillPayment" as any, qboTxnId: "x", reason: "test scope guard" }),
+      (error: any) => error.code === "PR-043",
+    );
+  });
+
+  it("void_transaction 423s when money_lock is engaged (RED gate)", async () => {
+    const { service } = harness();
+    await service.saveGateRun("RED", [{ gate: "G-A", pass: false, summary: "Injected RED" }]);
+    await assert.rejects(
+      () => service.voidTransaction({ entity_type: "Bill", qbo_txn_id: "bill_1", reason: "correcting a duplicate", confirm: true }),
+      (error: any) => error.code === "LOCKED_423" && error.status === 423,
+    );
+  });
+
+  it("void_transaction voids exactly once - a second void on the same txn is refused", async () => {
+    const { service } = harness();
+    await service.saveGateRun("GREEN", [{ gate: "G-A", pass: true, summary: "Fresh GREEN" }]);
+    const first = await service.voidTransaction({ entity_type: "Bill", qbo_txn_id: "bill_1", reason: "correcting a duplicate entry", confirm: true }) as { voided: true };
+    assert.equal(first.voided, true);
+    await assert.rejects(
+      () => service.voidTransaction({ entity_type: "Bill", qbo_txn_id: "bill_1", reason: "correcting a duplicate entry", confirm: true }),
+      (error: any) => error.code === "PR-043",
+    );
+  });
+
   it("fee pair failure records PR-020-style FAILED row with voided compensation", async () => {
     const { repo, qbo, service } = harness();
     await service.saveGateRun("GREEN", [{ gate: "G-A", pass: true, summary: "Fresh GREEN" }]);

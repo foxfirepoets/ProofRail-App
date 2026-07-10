@@ -26,9 +26,34 @@ export interface QboFeePairResult {
   voided?: boolean;
 }
 
+/** Remove a posted transaction (Ben's directive, 2026-07-10). Scope is the same money boundary
+ *  already enforced everywhere else in this codebase (CLAUDE.md non-negotiable #2): Bill,
+ *  Invoice, JournalEntry only - never BillPayment/Payment/Deposit/Check (those are the
+ *  payment-boundary entities this app never touches at all, per assertNoPaymentEntity below and
+ *  the CLAUDE.md rule). QBO's API does not support true "void" uniformly: Invoice gets a real
+ *  void (zeroed, stays visible in history); Bill and JournalEntry only support a hard delete
+ *  (confirmed live against the sandbox, 2026-07-10 - QBO returns UnsupportedOperationException
+ *  for operation=void on a Bill). Which operation actually ran is always reported back in the
+ *  result - callers should never assume "void" happened just because they called this method. */
+export type QboVoidableEntity = "Bill" | "Invoice" | "JournalEntry";
+
+export interface QboVoidRequest {
+  entityType: QboVoidableEntity;
+  qboTxnId: string;
+  reason: string;
+}
+
+export interface QboVoidResult {
+  entityType: QboVoidableEntity;
+  qboTxnId: string;
+  operation: "void" | "delete";
+  voided: true;
+}
+
 export interface QboClient {
   createBill(request: QboBillRequest): Promise<{ qboTxnId: string; duplicate?: boolean }>;
   postFeePair(request: QboFeePairRequest): Promise<QboFeePairResult>;
+  voidTransaction(request: QboVoidRequest): Promise<QboVoidResult>;
 }
 
 /** Satisfied by ProofRailRepository.resolveQboClass - narrowed here so qbo.ts doesn't depend on the whole repository interface. */
@@ -293,6 +318,64 @@ export class RealQboClient implements QboClient {
     // Fail closed rather than fake a mirrored pair.
     throw new Error("RealQboClient.postFeePair is not implemented - no verified real fee-pair posting exists to port from yet.");
   }
+
+  /** Remove a posted transaction (Ben's directive, 2026-07-10). Scoped to Bill/Invoice/
+   *  JournalEntry only, matching the existing money boundary (CLAUDE.md non-negotiable #2).
+   *  QBO's API does NOT support a true "void" operation uniformly across transaction types -
+   *  confirmed live against the sandbox (2026-07-10): operation=void on a Bill returns
+   *  UnsupportedOperationException. Only Invoice (and Payment/SalesReceipt/Check, out of scope
+   *  here) support void. Bill and JournalEntry only support operation=delete - a real hard
+   *  delete, though QBO's own system Audit History still logs the deletion event even though the
+   *  transaction itself no longer appears as a record in the register. Per-entity operation is
+   *  fixed below, not caller-chosen - never let a caller silently get "delete" when they asked
+   *  for a type that supports real void. Requires the current SyncToken (QBO's
+   *  optimistic-concurrency field) fetched fresh via query - never trust a caller-supplied
+   *  SyncToken, it could be stale. */
+  async voidTransaction(request: QboVoidRequest): Promise<QboVoidResult> {
+    assertVoidableEntity(request.entityType);
+    await this.assertCompany();
+
+    const operation = request.entityType === "Invoice" ? "void" : "delete";
+
+    const safeId = request.qboTxnId.replace(/'/g, "\\'");
+    const rows = await this.query(`SELECT * FROM ${request.entityType} WHERE Id = '${safeId}'`);
+    const current = rows[0] as { Id: string; SyncToken: string } | undefined;
+    if (!current) {
+      throw new ProofRailError(
+        "PR-043",
+        `${request.entityType} '${request.qboTxnId}' not found in QBO - cannot ${operation} a transaction that doesn't exist.`,
+        404,
+      );
+    }
+
+    const response = await this.request<Record<string, { Id?: string; status?: string } | undefined>>(
+      "POST",
+      request.entityType.toLowerCase(),
+      { operation },
+      { Id: current.Id, SyncToken: current.SyncToken },
+    );
+    const result = response[request.entityType] ?? (response as { Id?: string; status?: string });
+    const confirmed = operation === "delete" ? result?.status === "Deleted" : result?.Id === current.Id;
+    if (!confirmed) {
+      throw new Error(
+        `QBO ${operation} response did not confirm ${request.entityType} ${request.qboTxnId} (response: ${JSON.stringify(response)})`,
+      );
+    }
+    return { entityType: request.entityType, qboTxnId: request.qboTxnId, operation, voided: true };
+  }
+}
+
+const VOIDABLE_ENTITIES: ReadonlySet<QboVoidableEntity> = new Set(["Bill", "Invoice", "JournalEntry"]);
+
+export function assertVoidableEntity(entityType: string): asserts entityType is QboVoidableEntity {
+  if (!VOIDABLE_ENTITIES.has(entityType as QboVoidableEntity)) {
+    throw new ProofRailError(
+      "PR-043",
+      `'${entityType}' is outside ProofRail's void scope. Only Bill, Invoice, and JournalEntry may be voided - ` +
+        "matching the same money boundary already enforced for creates (never BillPayment/Payment/Deposit/Check).",
+      400,
+    );
+  }
 }
 
 export class FakeQboClient implements QboClient {
@@ -318,6 +401,18 @@ export class FakeQboClient implements QboClient {
       invoiceTxnId: `invoice_${request.feeRunId}`,
       billTxnId: `bill_${request.feeRunId}`,
     };
+  }
+
+  private readonly voided = new Set<string>();
+
+  async voidTransaction(request: QboVoidRequest): Promise<QboVoidResult> {
+    assertVoidableEntity(request.entityType);
+    if (this.voided.has(request.qboTxnId)) {
+      throw new ProofRailError("PR-043", `${request.entityType} '${request.qboTxnId}' is already voided.`, 409);
+    }
+    this.voided.add(request.qboTxnId);
+    const operation = request.entityType === "Invoice" ? "void" : "delete";
+    return { entityType: request.entityType, qboTxnId: request.qboTxnId, operation, voided: true };
   }
 }
 

@@ -357,6 +357,28 @@ export class ProofRailService {
     return result;
   }
 
+  /** void_transaction (Ben's directive, 2026-07-10) - void, never a hard delete. Scoped to
+   *  Bill/Invoice/JournalEntry (enforced in qbo.ts's assertVoidableEntity, never trust the
+   *  caller). Money-lock gated like send_draw/approve_fees: a RED gate blocks corrections too,
+   *  same fail-closed posture as every other irreversible tool here. Requires literal
+   *  confirm:true (no default) and a reason (audit trail - why this transaction is being voided),
+   *  matching the reject tool's reason requirement. */
+  async voidTransaction(input: { entity_type: "Bill" | "Invoice" | "JournalEntry"; qbo_txn_id: string; reason: string; confirm: true }, actorKey = "local"): Promise<unknown> {
+    await this.assertMoneyOpen("void_transaction");
+    if (!input.reason || input.reason.trim().length < 10) {
+      throw new ProofRailError("PR-002", "void_transaction requires a reason of at least 10 characters.", 400);
+    }
+    const voidResult = await this.qbo.voidTransaction({
+      entityType: input.entity_type,
+      qboTxnId: input.qbo_txn_id,
+      reason: input.reason,
+    });
+    const proof = await this.proof.recordWorkflowEvent({ kind: "qbo_void", ...voidResult, reason: input.reason });
+    const result = { entity_type: voidResult.entityType, qbo_txn_id: voidResult.qboTxnId, operation: voidResult.operation, voided: true, proof };
+    await this.audit("void_transaction", input, result, actorKey);
+    return result;
+  }
+
   private async requiredIntake(id: string): Promise<IntakeRecord> {
     const intake = await this.repo.findIntakeById(id);
     if (!intake) {

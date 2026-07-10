@@ -184,6 +184,18 @@ function buildServer(): McpServer {
     (args) => proofRailService.lookupCoding(args),
   );
 
+  tool(
+    "void_transaction",
+    "Remove a posted QBO Bill, Invoice, or JournalEntry. Invoice gets a true void (zeroed, stays visible in history) - QBO's API does not support void for Bill/JournalEntry, so those get a hard delete instead (still logged in QBO's own system Audit History). The response's 'operation' field always reports which one actually happened. Requires confirm:true and a reason (>=10 chars). 423s if money_lock is engaged, same as send_draw/approve_fees.",
+    {
+      entity_type: z.enum(["Bill", "Invoice", "JournalEntry"]),
+      qbo_txn_id: z.string(),
+      reason: z.string(),
+      confirm: z.literal(true),
+    },
+    (args) => proofRailService.voidTransaction(args),
+  );
+
   return server;
 }
 
