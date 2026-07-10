@@ -1,10 +1,52 @@
 # QBO MCP OAuth Approval — what Ben needs to do before real QBO posting is allowed
 
-**Status as of 2026-07-08: QBO live wiring is PAUSED.** `container.ts` uses `FakeQboClient`.
+**Status as of 2026-07-09: QBO live wiring is STILL PAUSED — `container.ts` still uses
+`FakeQboClient`, unchanged.** What changed today: the callback route this doc calls "does not
+exist in the deployed app yet" now exists in the repo (not yet deployed/exercised — see below).
 `RealQboClient` (`src/proofrail/qbo.ts`) is code-complete — OAuth refresh, sandbox guard, Class/
-Location/Customer/Item resolution, dedupe — but is **not approved for real posting** until the
-four items below are done. Until then, **`scripts/*.py` remains the live source of truth** for
-any real QBO write; the MCP path is not to be trusted for real postings.
+Location/Customer/Item resolution, dedupe, and (new) a rotation-persistence callback — but is
+**not approved for real posting** until the acceptance tests in section 4 pass. Until then,
+**`scripts/*.py` remains the live source of truth** for any real QBO write; the MCP path is not
+to be trusted for real postings.
+
+## 0. Implementation status (2026-07-09)
+
+Ben registered the redirect URI as `https://proofrail-mcp.onrender.com/auth/qbo/callback`. Built
+against that URL, in this repo, not yet deployed or exercised against real Intuit sandbox
+companies:
+
+- `src/api/mcp-server.ts` — added `GET /auth/qbo/start?realm=A|B` (redirects to Intuit's
+  consent page, builds the redirect_uri from the same `baseUrl(req)` helper the existing
+  Cowork-facing OAuth shim uses, so it resolves to the registered URL in production) and
+  `GET /auth/qbo/callback` (exchanges the code, verifies `realmId` against `QBO_REALM_A`/
+  `QBO_REALM_B` before storing anything, writes to `proofrail_qbo_token_store`, never echoes a
+  token value in its response). Both routes respond `501` with a plain message instead of
+  crashing the MCP server if `QBO_CLIENT_ID`/`QBO_CLIENT_SECRET`/`PROOFRAIL_DATABASE_URL`/the
+  relevant `QBO_REALM_*` aren't set yet.
+- `src/proofrail/qbo-token-store.ts` — new, narrowly-scoped module (deliberately separate from
+  `PostgresProofRailRepository`, which owns business data, not auth infra) reading/writing the
+  **already-provisioned** `proofrail_qbo_token_store` table (confirmed present 2026-07-09 in the
+  `fdnwlcomuddzmluvbylg` Supabase project — columns `realm` (PK, 'A'/'B'), `realm_id`,
+  `refresh_token`, `access_token`, `access_expires_at`, `updated_at`). No migration was needed.
+- `src/proofrail/qbo.ts` — `RealQboClient` now takes an optional `onRefreshTokenRotated`
+  callback, invoked every time Intuit rotates the refresh token inside `token()`. Wire it to
+  `QboTokenStore.persistRotation` when this client is eventually constructed for real — this is
+  what makes acceptance test 2 ("token rotation survives a restart") pass instead of silently
+  losing the rotated token to memory on the next deploy/restart.
+- `.env.example` — documented the Render-app env vars from section 3 below in a clearly-labeled
+  section, distinct from the work-machine's `QB_*` vars. Confirmed `QBO_REALM_A_REFRESH_TOKEN`/
+  `QBO_REALM_B_REFRESH_TOKEN` are correctly NOT env vars (the callback route writes them to
+  Supabase directly) and added `PROOFRAIL_DATABASE_URL` + `SWARMSYNC_VERIFY_API_KEY`, which were
+  missing from `.env.example` even though the code already requires/uses them.
+- `container.ts` was **not touched** — still wires `FakeQboClient`. Flipping it to
+  `RealQboClient` requires all seven acceptance tests in section 4 AND Ben's explicit go-ahead,
+  neither of which has happened.
+
+**What Ben still needs to do** (section 2 below, now literally clickable instead of hand-built):
+confirm `QBO_CLIENT_ID`/`QBO_CLIENT_SECRET`/`QBO_REALM_A`/`QBO_REALM_B`/`PROOFRAIL_DATABASE_URL`
+are set on the Render service, confirm the redirect URI is registered in the Intuit app's Keys &
+OAuth settings, deploy, then visit `https://proofrail-mcp.onrender.com/auth/qbo/start?realm=A`
+and `?realm=B` once each, logging into the correct sandbox company each time.
 
 ## 1. Why a SEPARATE OAuth grant — not reuse of the local script's token
 
@@ -84,8 +126,11 @@ the app must write rotated tokens back to `proofrail_qbo_token_store`, mirroring
 All of the following must pass, in this order, before `container.ts` is changed from
 `FakeQboClient` to `RealQboClient`:
 
-1. **Callback route exists and completes a real OAuth exchange** — `/auth/qbo/callback` implemented,
-   manually exercised once per realm (step 2 above), tokens land in `proofrail_qbo_token_store`.
+1. **Callback route exists and completes a real OAuth exchange** — `/auth/qbo/start` +
+   `/auth/qbo/callback` implemented 2026-07-09 (see section 0 above) but **not yet deployed or
+   manually exercised against real Intuit sandbox companies** — this test is not yet passed, only
+   unblocked. Still needed: deploy, confirm env vars are set, visit `/auth/qbo/start?realm=A` and
+   `?realm=B` once each, confirm tokens land in `proofrail_qbo_token_store`.
 2. **Token rotation survives a restart** — force a token refresh, restart the Render service,
    confirm the next call still authenticates (proves the rotated token was actually persisted, not
    just held in memory).

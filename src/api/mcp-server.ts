@@ -19,12 +19,13 @@
  * section 10 - this file doesn't paper over that; see the README note in this repo for honest status.
  */
 import express, { type NextFunction, type Request, type Response } from "express";
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 import { ProofRailError } from "../proofrail/errors.js";
 import { proofRailService } from "../proofrail/container.js";
+import { QboTokenStore, type QboRealmSlot } from "../proofrail/qbo-token-store.js";
 
 // Render (and most PaaS hosts) assign the port via $PORT and route traffic only to that port.
 // PROOFRAIL_MCP_PORT stays as a local-dev override; $PORT wins when present.
@@ -364,6 +365,157 @@ export function startMcpServer(): void {
     }
 
     res.status(400).json({ error: "unsupported_grant_type" });
+  });
+
+  // -- QBO OAuth (this app's OWN Intuit grant - NOT the Cowork-facing shim above) --
+  // See docs/QBO_MCP_OAUTH_APPROVAL.md for the full rationale: Intuit rotates the refresh token
+  // on every refresh, so this app must hold a SEPARATE refresh token from the work-machine's
+  // scripts/*.py pipeline (never the same value) or the two halves will invalidate each other's
+  // tokens on their next refresh. This section only ever reads QBO_CLIENT_ID/QBO_CLIENT_SECRET/
+  // QBO_REALM_A/QBO_REALM_B from THIS process's environment and writes tokens to
+  // proofrail_qbo_token_store in Supabase - it never touches the work machine's .env or
+  // .qbo_tokens.json, and there is no code path here that could.
+  //
+  // Registered redirect URI (Ben, 2026-07-09): https://proofrail-mcp.onrender.com/auth/qbo/callback
+  // - this MUST exactly match what's registered in the Intuit app's Keys & OAuth settings
+  // (scheme+host+path+trailing-slash all matter). baseUrl(req) below resolves to that same value
+  // in production via RENDER_EXTERNAL_URL, so the two stay in sync without hardcoding it twice.
+  const QBO_CLIENT_ID = process.env.QBO_CLIENT_ID;
+  const QBO_CLIENT_SECRET = process.env.QBO_CLIENT_SECRET;
+  const QBO_REALM_IDS: Record<QboRealmSlot, string | undefined> = {
+    A: process.env.QBO_REALM_A,
+    B: process.env.QBO_REALM_B,
+  };
+  let qboTokenStore: QboTokenStore | undefined;
+  try {
+    qboTokenStore = new QboTokenStore();
+  } catch {
+    // PROOFRAIL_DATABASE_URL missing - QBO OAuth routes report 501 below rather than crashing
+    // the whole MCP server (money-adjacent QBO posting is explicitly paused/optional per
+    // CLAUDE.md; the core MCP tool surface must still start without it).
+    qboTokenStore = undefined;
+  }
+
+  interface QboAuthState {
+    realm: QboRealmSlot;
+    redirectUri: string;
+    expiresAt: number;
+  }
+  const qboAuthStates = new Map<string, QboAuthState>();
+
+  function qboConfigError(): string | undefined {
+    if (!QBO_CLIENT_ID || !QBO_CLIENT_SECRET) {
+      return "QBO_CLIENT_ID / QBO_CLIENT_SECRET are not set on this service yet.";
+    }
+    if (!qboTokenStore) {
+      return "PROOFRAIL_DATABASE_URL is not set on this service yet - cannot store QBO tokens.";
+    }
+    return undefined;
+  }
+
+  // Step 1 of 2: start a fresh Intuit consent flow for one realm. Ben visits this once per realm
+  // (?realm=A for partnership/projects, ?realm=B for parent/corporate) per
+  // docs/QBO_MCP_OAUTH_APPROVAL.md section 2 step 3 - this route builds that URL so it doesn't
+  // have to be hand-assembled.
+  app.get("/auth/qbo/start", (req, res) => {
+    const configError = qboConfigError();
+    if (configError) {
+      res.status(501).send(`QBO OAuth not configured: ${configError}`);
+      return;
+    }
+    const realm = (req.query.realm as string | undefined)?.toUpperCase();
+    if (realm !== "A" && realm !== "B") {
+      res.status(400).send("invalid_request: ?realm=A or ?realm=B is required (A = partnership/projects, B = parent/corporate).");
+      return;
+    }
+    if (!QBO_REALM_IDS[realm]) {
+      res.status(501).send(`QBO_REALM_${realm} is not set on this service yet - cannot verify the callback's realmId without it.`);
+      return;
+    }
+
+    const redirectUri = `${baseUrl(req)}/auth/qbo/callback`;
+    const state = randomBytes(24).toString("hex");
+    qboAuthStates.set(state, { realm, redirectUri, expiresAt: Date.now() + 10 * 60_000 });
+
+    const authorizeUrl = new URL("https://appcenter.intuit.com/connect/oauth2");
+    authorizeUrl.searchParams.set("client_id", QBO_CLIENT_ID!);
+    authorizeUrl.searchParams.set("redirect_uri", redirectUri);
+    authorizeUrl.searchParams.set("response_type", "code");
+    authorizeUrl.searchParams.set("scope", "com.intuit.quickbooks.accounting");
+    authorizeUrl.searchParams.set("state", state);
+    res.redirect(302, authorizeUrl.toString());
+  });
+
+  // Step 2 of 2: Intuit redirects here with `code` + `realmId` after Ben logs in and approves.
+  // Exchanges the code for a refresh token, verifies realmId matches the realm this flow was
+  // started for, and stores the token pair in proofrail_qbo_token_store - never in this app's
+  // response, logs, or any file.
+  app.get("/auth/qbo/callback", async (req, res) => {
+    const configError = qboConfigError();
+    if (configError) {
+      res.status(501).send(`QBO OAuth not configured: ${configError}`);
+      return;
+    }
+    const { code, realmId, state, error, error_description } = req.query as Record<string, string | undefined>;
+    if (error) {
+      res.status(400).send(`Intuit returned an error: ${error} - ${error_description ?? "no description"}. Nothing was stored.`);
+      return;
+    }
+    const entry = state ? qboAuthStates.get(state) : undefined;
+    if (!entry || entry.expiresAt < Date.now()) {
+      res.status(400).send("invalid_state: this consent flow expired or was never started via /auth/qbo/start. Nothing was stored.");
+      return;
+    }
+    qboAuthStates.delete(state!); // single-use
+    if (!code || !realmId) {
+      res.status(400).send("invalid_request: Intuit's callback is missing code or realmId. Nothing was stored.");
+      return;
+    }
+    const expectedRealmId = QBO_REALM_IDS[entry.realm];
+    if (realmId !== expectedRealmId) {
+      // Doc section 2 step 4: wrong company was authorized - refuse to store, tell Ben plainly.
+      res.status(400).send(
+        `realmId mismatch: Intuit returned realmId ${realmId}, but QBO_REALM_${entry.realm} is configured as ` +
+          `${expectedRealmId}. This means the wrong sandbox company was approved during login. Nothing was ` +
+          `stored - redo /auth/qbo/start?realm=${entry.realm} and make sure to log into the correct sandbox company.`,
+      );
+      return;
+    }
+
+    try {
+      const basic = Buffer.from(`${QBO_CLIENT_ID}:${QBO_CLIENT_SECRET}`).toString("base64");
+      const tokenRes = await fetch("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer", {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${basic}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+        body: new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: entry.redirectUri }),
+      });
+      if (!tokenRes.ok) {
+        res.status(502).send(`Intuit token exchange failed: HTTP ${tokenRes.status} - ${await tokenRes.text()}. Nothing was stored.`);
+        return;
+      }
+      const tok = (await tokenRes.json()) as { access_token: string; refresh_token: string; expires_in: number };
+      await qboTokenStore!.seed({
+        realm: entry.realm,
+        realmId,
+        refreshToken: tok.refresh_token,
+        accessToken: tok.access_token,
+        accessExpiresAt: new Date(Date.now() + (tok.expires_in - 120) * 1000),
+      });
+      res
+        .status(200)
+        .type("text/plain")
+        .send(
+          `QBO Realm ${entry.realm} connected. realmId ${realmId} authorized and stored in ` +
+            `proofrail_qbo_token_store. Tokens are not shown here or in any log. ` +
+            `${entry.realm === "A" ? "Now run /auth/qbo/start?realm=B for the other realm." : "Both realms should now be connected - verify with a read from proofrail_qbo_token_store."}`,
+        );
+    } catch (err) {
+      res.status(500).send(`QBO token exchange threw: ${err instanceof Error ? err.message : String(err)}. Nothing was stored.`);
+    }
   });
 
   // Streamable HTTP transport, STATEFUL mode: Cowork opens one session (initialize) and then

@@ -85,6 +85,7 @@ export class RealQboClient implements QboClient {
   private readonly minorVersion: string;
   private readonly baseUrl: string;
   private readonly classResolver: ClassResolver;
+  private readonly onRefreshTokenRotated?: (newRefreshToken: string, newAccessToken: string, accessExpiresAt: Date) => Promise<void> | void;
   private refreshToken: string;
   private accessToken: string | undefined;
   private accessExpiresAt = 0;
@@ -98,6 +99,15 @@ export class RealQboClient implements QboClient {
     classResolver: ClassResolver;
     minorVersion?: string;
     baseUrl?: string;
+    /**
+     * Called every time Intuit rotates the refresh token (i.e. on every successful token()
+     * call - Intuit issues a new refresh_token on every refresh in its current model). Wire
+     * this to QboTokenStore.persistRotation so a rotation surviving only in memory doesn't
+     * silently break the NEXT refresh after a process restart (see docs/QBO_MCP_OAUTH_APPROVAL.md
+     * acceptance test 2). Errors thrown by this callback propagate out of token() - a failed
+     * persist should fail the call, not silently continue on an unpersisted token.
+     */
+    onRefreshTokenRotated?: (newRefreshToken: string, newAccessToken: string, accessExpiresAt: Date) => Promise<void> | void;
   }) {
     this.clientId = options.clientId;
     this.clientSecret = options.clientSecret;
@@ -105,6 +115,7 @@ export class RealQboClient implements QboClient {
     this.refreshToken = options.refreshToken;
     this.expectedCompanyName = options.expectedCompanyName;
     this.classResolver = options.classResolver;
+    this.onRefreshTokenRotated = options.onRefreshTokenRotated;
     this.minorVersion = options.minorVersion ?? "75";
     this.baseUrl = options.baseUrl ?? "https://sandbox-quickbooks.api.intuit.com/v3";
     // Sandbox guard (qbo_common.py's guard_sandbox): no production mode exists in this client.
@@ -136,6 +147,9 @@ export class RealQboClient implements QboClient {
     // is not optional once wired to a real repository.
     if (tok.refresh_token && tok.refresh_token !== this.refreshToken) {
       this.refreshToken = tok.refresh_token;
+      if (this.onRefreshTokenRotated) {
+        await this.onRefreshTokenRotated(this.refreshToken, this.accessToken, new Date(this.accessExpiresAt));
+      }
     }
     return this.accessToken;
   }
