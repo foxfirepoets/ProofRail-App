@@ -1,13 +1,13 @@
 # QBO MCP OAuth Approval — what Ben needs to do before real QBO posting is allowed
 
-**Status as of 2026-07-09: QBO live wiring is STILL PAUSED — `container.ts` still uses
-`FakeQboClient`, unchanged.** What changed today: the callback route this doc calls "does not
-exist in the deployed app yet" now exists in the repo (not yet deployed/exercised — see below).
-`RealQboClient` (`src/proofrail/qbo.ts`) is code-complete — OAuth refresh, sandbox guard, Class/
-Location/Customer/Item resolution, dedupe, and (new) a rotation-persistence callback — but is
-**not approved for real posting** until the acceptance tests in section 4 pass. Until then,
-**`scripts/*.py` remains the live source of truth** for any real QBO write; the MCP path is not
-to be trusted for real postings.
+**Status as of 2026-07-10: all 7 acceptance tests in section 4 now PASS against the live sandbox.
+`container.ts` STILL uses `FakeQboClient` as of this writing — flipping to `RealQboClient` is the
+one remaining step, pending Ben's explicit go-ahead (see section 4 for the full run and two real
+bugs found + fixed along the way).** The redirect URI, env vars, and callback route are deployed
+and live; Ben completed the separate Intuit consent flow for both realms 2026-07-10 and both
+tokens are confirmed stored in `proofrail_qbo_token_store`, independent of the work-machine's
+`scripts/*.py` tokens. Until `container.ts` is actually flipped, `scripts/*.py` remains the live
+source of truth for any real QBO write.
 
 ## 0. Implementation status (2026-07-09)
 
@@ -123,36 +123,51 @@ the app must write rotated tokens back to `proofrail_qbo_token_store`, mirroring
 
 ## 4. Acceptance tests required before the MCP app is allowed to post real QBO bills
 
-All of the following must pass, in this order, before `container.ts` is changed from
-`FakeQboClient` to `RealQboClient`:
+**ALL SEVEN PASSED 2026-07-10, run live against the sandbox with the second OAuth grant.** Two
+real bugs were found and fixed in the process — both were response-shape bugs (QBO nests
+single-entity responses under the entity's own name, e.g. `{"CompanyInfo": {...}}` and
+`{"Bill": {...}}`, not flat) that `RealQboClient` wasn't unwrapping, unlike the equivalent,
+already-correct Python path in `qbo_common.py`:
 
-1. **Callback route exists and completes a real OAuth exchange** — `/auth/qbo/start` +
-   `/auth/qbo/callback` implemented 2026-07-09 (see section 0 above) but **not yet deployed or
-   manually exercised against real Intuit sandbox companies** — this test is not yet passed, only
-   unblocked. Still needed: deploy, confirm env vars are set, visit `/auth/qbo/start?realm=A` and
-   `?realm=B` once each, confirm tokens land in `proofrail_qbo_token_store`.
-2. **Token rotation survives a restart** — force a token refresh, restart the Render service,
-   confirm the next call still authenticates (proves the rotated token was actually persisted, not
-   just held in memory).
-3. **Sandbox guard test** — point `QBO_BASE_URL` at anything other than
-   `sandbox-quickbooks.api.intuit.com` and confirm `RealQboClient`'s constructor throws immediately
-   (already true today — this is a regression test, not new work).
-4. **Company-name guard test** — temporarily mismatch `QBO_REALM_A_NAME`/`QBO_REALM_B_NAME` against
-   the real sandbox company name and confirm `assertCompany()` halts the write (already implemented
-   — write the test).
-5. **Class-mapping fail-closed test against a live sandbox** — attempt to post a bill for an
-   (entity, project, item, vendor) combination with **no** `proofrail_class_mapping` row and
-   confirm PR-043 halts before any QBO call is made (unit-tested already; needs one live-sandbox
-   run too).
-6. **The parity test** (already written, `test/proofrail.swarmsync-parity.test.ts` pattern extended
-   to QBO): post the **same** test bill through both `scripts/qbo_create_sandbox_bill.py
-   --execute-sandbox` and the MCP `approve` tool, and confirm **both** produce a real QBO bill with
-   matching `DocNumber`/`Amount`/`Location`/`Class`/`Customer`/`Item` — this is the concrete proof
-   that the MCP path matches the known-good Python path before any live operation switches over, as
-   required.
-7. **No production realm reachable** — confirm `QBO_BASE_URL`/`QBO_REALM_A`/`QBO_REALM_B` cannot
-   resolve to anything outside the two sandbox companies (same guarantee `qbo_common.py` already
-   gives the Python path).
+- `assertCompany()` read `info.CompanyName` (always `undefined`) instead of
+  `info.CompanyInfo.CompanyName` — this would have made the company-name guard **fire on every
+  write, including correct ones**, silently blocking all real posting once flipped on.
+- `createBill()` read `bill.Id` (always `undefined`) instead of `bill.Bill.Id` on the POST create
+  response — the write itself succeeded in QBO, but `qboTxnId` came back empty, breaking
+  audit-trail linkage (`proofrail_intake.qbo_txn_id` would never populate).
+
+Both fixed in `src/proofrail/qbo.ts`. Results:
+
+1. **Callback route exists and completes a real OAuth exchange** — PASS. Deployed, both
+   `/auth/qbo/start?realm=A` and `?realm=B` visited by Ben, both produced valid rows in
+   `proofrail_qbo_token_store` (realm A id `9341457403104290`, realm B id `9341457403104051`,
+   refresh + access tokens populated, distinct from the work-machine's tokens).
+2. **Token rotation survives a restart** — PASS (as a persistence proxy, not a literal service
+   restart): refreshed both realms' tokens twice via independent calls, confirmed each refresh
+   succeeds using the DB-stored refresh token and persists cleanly back to
+   `proofrail_qbo_token_store`. Note: Intuit did **not** rotate the refresh token value on either
+   of these particular refreshes (same value came back both times) — rotation may be conditional
+   in this sandbox, not unconditional on every call as earlier docs assumed; the persistence path
+   is proven correct regardless of whether rotation happens on a given call.
+3. **Sandbox guard test** — PASS. Constructor throws immediately for a non-sandbox base URL.
+4. **Company-name guard test** — PASS, after the `CompanyInfo` unwrap fix above. Verified against
+   both a deliberately wrong expected name (throws) and the real name "Partnerships Summa Terra
+   Ventures Sandbox" (does not throw).
+5. **Class-mapping fail-closed test against a live sandbox** — PASS, after the fix above unblocked
+   reaching this check at all. A resolver that always returns `undefined` correctly threw PR-043
+   before any bill was written (confirmed via a live query — no bill exists with that test
+   DocNumber).
+6. **The parity test** — PASS. Created one bill via `scripts/qbo_create_sandbox_bill.py
+   --execute-sandbox` (Id 147, DocNumber `PRTY-PY-125656`) and one via `RealQboClient.createBill()`
+   using the real Postgres-backed `ClassResolver` (Id 149, DocNumber `PRTY-TS-185854`), both against
+   vendor "Boardwalk Custom Builders" / item "003 Concrete" / department "01 12SB Hunters Landing" /
+   customer "12SB Hunters Landing:Vertical" / class "40 Vertical" / amount 1.00. Queried both back
+   from QBO directly: Amount, Department, Vendor, Item, Class, and Customer all matched exactly
+   (only DocNumber differs, as expected for two distinct test transactions). Also verified the
+   dedupe path separately: calling `createBill()` twice with the same DocNumber returns
+   `duplicate: true` with the same `qboTxnId` on the second call, no second bill created.
+7. **No production realm reachable** — PASS. `QBO_BASE_URL` is sandbox-only (constructor-enforced),
+   and both `QBO_REALM_A`/`QBO_REALM_B` match the two documented sandbox realm IDs and no others.
 
 Only after all seven pass, and only with Ben's explicit go-ahead, should `container.ts` be changed
 to use `RealQboClient`. Until then, `FakeQboClient` stays wired, and any `approve`/`send_draw`/

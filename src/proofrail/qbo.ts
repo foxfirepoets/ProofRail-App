@@ -186,10 +186,16 @@ export class RealQboClient implements QboClient {
 
   /** Read-only sanity check before any write - refuses to post to the wrong sandbox company. */
   async assertCompany(): Promise<void> {
-    const info = await this.request<{ CompanyName: string }>("GET", `companyinfo/${this.realmId}`);
-    if (info.CompanyName !== this.expectedCompanyName) {
+    // The companyinfo endpoint nests the entity under "CompanyInfo" - unlike query results (which
+    // nest under QueryResponse.<Entity>), this is NOT a flat { CompanyName } response. Confirmed
+    // against the live sandbox (2026-07-10): reading info.CompanyName directly was always
+    // undefined, so this guard was silently mismatching on the CORRECT company too, not just
+    // wrong ones - it would have blocked every real write, not just caught bad ones.
+    const info = await this.request<{ CompanyInfo: { CompanyName: string } }>("GET", `companyinfo/${this.realmId}`);
+    const companyName = info.CompanyInfo?.CompanyName;
+    if (companyName !== this.expectedCompanyName) {
       throw new Error(
-        `QBO company name mismatch: got '${info.CompanyName}', expected '${this.expectedCompanyName}'. Halting writes.`,
+        `QBO company name mismatch: got '${companyName}', expected '${this.expectedCompanyName}'. Halting writes.`,
       );
     }
   }
@@ -251,7 +257,7 @@ export class RealQboClient implements QboClient {
       return { qboTxnId: (existingDupe as { Id: string }).Id, duplicate: true };
     }
 
-    const bill = await this.request<{ Id: string }>("POST", "bill", { requestid: request.requestId }, {
+    const response = await this.request<{ Bill?: { Id: string } } & { Id?: string }>("POST", "bill", { requestid: request.requestId }, {
       VendorRef: { value: vendor!.Id },
       TxnDate: parsed?.invoice_date ?? new Date().toISOString().slice(0, 10),
       DocNumber: docNumber,
@@ -269,6 +275,14 @@ export class RealQboClient implements QboClient {
         },
       }],
     });
+    // POST create responses nest the entity under its own name (e.g. { "Bill": {...} }), same as
+    // companyinfo nests under "CompanyInfo" - confirmed against the live sandbox (2026-07-10): reading
+    // response.Id directly was always undefined even though the bill posted correctly, silently
+    // dropping qboTxnId (breaks audit-trail linkage even though the write itself succeeded).
+    const bill = response.Bill ?? response;
+    if (!bill.Id) {
+      throw new Error(`QBO bill create response had no Id (response: ${JSON.stringify(response)})`);
+    }
     return { qboTxnId: bill.Id };
   }
 
