@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Draw {{ d.draw_number }}{% endblock %}
+{% block body %}
+<h1>Draw {{ d.draw_number }} — {{ d.project }}
+  {% if d.historical %}<span class="pill hist">historical / not-for-posting</span>{% endif %}
+</h1>
+<table><tbody>
+  <tr><th>Total this draw</th><td>{{ d.package_total }}</td><th>Status</th><td>{{ d.status }}</td></tr>
+  <tr><th>Borrower</th><td>{{ d.borrower or "—" }}</td><th>Lender</th><td>{{ d.lender or "—" }}</td></tr>
+  <tr><th>Collateral</th><td>{{ d.collateral_address or "—" }}</td><th>Date</th><td>{{ d.draw_date or "—" }}</td></tr>
+  <tr><th>CM approved</th><td>{{ d.cm_approved }}</td><th>Watson approved</th><td>{{ d.watson_approved }}</td></tr>
+  <tr><th>Source doc</th><td colspan="3"><code>{{ d.source_doc_ref or "—" }}</code></td></tr>
+</tbody></table>
+
+<div class="actions">
+  <form method="post" action="/ui/draws/{{ d.id }}/approve">
+    <button {% if d.historical %}disabled title="historical draw cannot be posted"{% endif %}>Approve for accounting</button>
+  </form>
+  <form method="post" action="/ui/draws/{{ d.id }}/reject"><button class="muted">Reject</button></form>
+  <form method="post" action="/ui/draws/{{ d.id }}/mark-historical"><button class="danger">Mark historical / not-for-posting</button></form>
+</div>
+{% if d.historical %}<p class="muted-txt">⛔ This draw is a paid historical fixture — approval-to-post is blocked.</p>{% endif %}
+
+<h2>Amount coverage</h2>
+<table><tbody>
+  <tr><th>Authoritative total</th><td>{{ d.coverage.authoritative_total }}</td></tr>
+  <tr><th>Parsed amount-due total</th><td>{{ d.coverage.parsed_amount_due_total }}</td></tr>
+  <tr><th>Reconstructed amount-due total</th><td>{{ d.coverage.reconstructed_amount_due_total }}</td></tr>
+  <tr><th>Unresolved delta</th><td>{{ d.coverage.unresolved_delta }}</td></tr>
+  <tr><th>Coverage</th><td>{{ d.coverage.pct_coverage }}% —
+    {% if d.coverage.fully_reconciled %}<span class="pill ok">fully reconciled</span>
+    {% else %}<span class="pill warn">needs review</span>{% endif %}</td></tr>
+  <tr><th>Confidence breakdown</th><td>{{ d.coverage.confidence_breakdown }}</td></tr>
+</tbody></table>
+
+<h2>Parsed lines ({{ d.lines|length }})</h2>
+<table><thead><tr><th>#</th><th>Item</th><th>Invoice</th><th>Payable to</th><th>Inv amt</th>
+  <th>Retainage</th><th>Amount due</th><th>Confidence</th><th>Cost code</th></tr></thead><tbody>
+{% for ln in d.lines %}<tr>
+  <td>{{ ln.line_no }}</td><td>{{ ln.item_code or "—" }}</td><td>{{ ln.invoice_no or "—" }}</td>
+  <td>{{ ln.payable_to or "—" }}</td><td>{{ ln.inv_amount or "—" }}</td><td>{{ ln.retainage or "—" }}</td>
+  <td>{{ ln.amount_due or "—" }}</td>
+  <td><span class="pill {{ 'ok' if ln.row_confidence in ('exact','reconstructed') else 'warn' }}">{{ ln.row_confidence }}</span></td>
+  <td>{% if ln.mapped_cost_code %}<span class="pill ok">mapped</span>
+    {% else %}<form method="post" action="/ui/draw-lines/{{ ln.id }}/remap-cost-code">
+      <input type="hidden" name="draw_id" value="{{ d.id }}">
+      <input name="cost_code_id" placeholder="cost_code id" size="10">
+      <button class="muted">remap</button></form>{% endif %}</td>
+</tr>{% endfor %}</tbody></table>
+
+<h2>Exceptions &amp; warnings</h2>
+<p>Retainage exceptions: {{ d.retainage_exceptions|length }} ·
+   Cost-code gaps: {{ d.cost_code_gaps|length }} ·
+   Review warnings: {{ d.warnings|length }}</p>
+{% if d.retainage_exceptions %}<table><thead><tr><th>Line</th><th>Inv</th><th>Retainage</th><th>Due</th><th>Expected</th></tr></thead><tbody>
+{% for e in d.retainage_exceptions %}<tr><td>{{ e.line_no }}</td><td>{{ e.inv_amount }}</td>
+  <td>{{ e.retainage }}</td><td>{{ e.amount_due }}</td><td>{{ e.expected_due }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+
+<h2>Developer fee &amp; commissions <span class="pill warn">SHADOW DRAFT — not posted</span></h2>
+<table><thead><tr><th>Book</th><th>Role</th><th>Rate</th><th>Amount</th></tr></thead><tbody>
+{% for fl in d.fee_panel.lines %}<tr><td>{{ fl.book }}</td><td>{{ fl.fee_role }}</td>
+  <td>{{ fl.rate }}</td><td>{{ fl.amount }}</td></tr>{% endfor %}</tbody></table>
+<table><tbody>
+  <tr><th>Partnership obligation (5% only)</th><td>{{ d.fee_panel.partnership_total }}</td></tr>
+  <tr><th>Parent debits (5% + 2% + 1% = 8%)</th><td>{{ d.fee_panel.parent_debit_total }}</td></tr>
+  <tr><th>Distinct economic total (8%)</th><td><span class="pill ok">{{ d.fee_panel.distinct_economic_total_8pct }}</span></td></tr>
+  <tr><th>Naive 4-row sum (13% — double-counts the mirrored 5%, NEVER booked)</th>
+      <td><span class="pill warn">{{ d.fee_panel.naive_double_counted_13pct }}</span></td></tr>
+</tbody></table>
+{% if d.fee_entries %}
+<h3>Drafted fee entries</h3>
+<table><thead><tr><th>Role</th><th>Amount</th><th>Dr</th><th>Cr</th><th>Status</th><th>QB TxnID</th></tr></thead><tbody>
+{% for fe in d.fee_entries %}<tr><td>{{ fe.fee_role }}</td><td>{{ fe.amount }}</td><td>{{ fe.dr_account }}</td>
+  <td>{{ fe.cr_account }}</td><td>{{ fe.status }}</td>
+  <td>{{ fe.qb_txn_id or "— not posted" }}</td></tr>{% endfor %}</tbody></table>
+{% else %}<p class="muted-txt">No fee entries drafted (engine fires only on approved, non-historical draws).</p>{% endif %}
+
+<h2>Proof / audit trail</h2>
+<p>Proof bundles: {{ d.proof.count }}</p>
+{% if d.proof.bundles %}<table><thead><tr><th>Kind</th><th>Passed</th><th>VCAP</th><th>Hash</th></tr></thead><tbody>
+{% for pb in d.proof.bundles %}<tr><td>{{ pb.kind }}</td>
+  <td>{% if pb.passed %}<span class="pill ok">passed</span>{% else %}<span class="pill warn">no</span>{% endif %}</td>
+  <td>{{ pb.vcap_state or "—" }}</td><td><code>{{ (pb.proof_hash or "—")[:16] }}</code></td></tr>{% endfor %}</tbody></table>
+{% else %}<p class="muted-txt">No proof bundle yet.</p>{% endif %}
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Vendors{% endblock %}
+{% block body %}
+<h1>Vendors</h1>
+<table><thead><tr><th>Name</th><th>QB ListID</th><th>SwarmScore</th></tr></thead><tbody>
+{% for v in vendors %}<tr><td><a href="/ui/vendors/{{ v.id }}">{{ v.name }}</a></td>
+  <td>{{ v.qb_list_id or "—" }}</td><td>{{ v.swarmscore if v.swarmscore is not none else "—" }}</td></tr>
+{% else %}<tr><td colspan="3" class="muted-txt">No vendors synced yet.</td></tr>{% endfor %}</tbody></table>
+{% endblock %}

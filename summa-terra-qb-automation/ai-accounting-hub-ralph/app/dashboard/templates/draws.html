@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Draw Packages{% endblock %}
+{% block body %}
+<h1>Draw Packages — Review Queue</h1>
+<table><thead><tr><th>Draw #</th><th>Project</th><th>Total</th><th>Status</th><th>Flag</th></tr></thead><tbody>
+{% for d in draws %}<tr>
+  <td><a href="/ui/draws/{{ d.id }}">{{ d.draw_number }}</a></td>
+  <td>{{ d.project }}</td><td>{{ d.package_total }}</td>
+  <td><span class="pill {{ 'ok' if d.status in ('parsed','approved_for_accounting') else 'warn' }}">{{ d.status }}</span></td>
+  <td>{% if d.historical %}<span class="pill hist">historical / not-for-posting</span>{% endif %}</td>
+</tr>{% else %}<tr><td colspan="5" class="muted-txt">No draw packages ingested yet.</td></tr>{% endfor %}</tbody></table>
+{% endblock %}

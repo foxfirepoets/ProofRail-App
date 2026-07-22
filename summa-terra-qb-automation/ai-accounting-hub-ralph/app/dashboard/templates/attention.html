@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}What Needs My Attention{% endblock %}
+{% block body %}
+<h1>What Needs My Attention Today</h1>
+<p class="muted-txt">{{ attention.total }} item{{ '' if attention.total == 1 else 's' }} need action
+  across all modules, grouped by urgency. Read-only — QuickBooks write-back is {{ attention.qb_write_back }}.</p>
+
+{% for grp in attention.groups %}
+  <h2>
+    {{ grp.kind }}
+    <span class="pill {{ 'warn' if grp.urgency == 'high' else ('hist' if grp.urgency == 'medium' else 'ok') }}">
+      {{ grp.urgency }} · {{ grp.count }}
+    </span>
+  </h2>
+  {% if grp.rows %}
+    <table>
+      <thead><tr><th>Item</th><th>Source</th></tr></thead>
+      <tbody>
+      {% for it in grp.rows %}
+        <tr>
+          <td><a href="{{ it.link }}">{{ it.label }}</a></td>
+          <td class="muted-txt">{{ it.sublabel }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted-txt">Nothing in this bucket. ✓</p>
+  {% endif %}
+{% endfor %}
+{% endblock %}

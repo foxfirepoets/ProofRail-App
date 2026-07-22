@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Vendor Bills{% endblock %}
+{% block body %}
+<h1>Vendor Bills / Non-GC Invoices</h1>
+<p class="muted-txt">Day-to-day AP invoices that are not GC draw packages. Intake runs vendor
+match, invoice/amount/due-date capture, duplicate detection, vendor bank-change warning, and
+missing-coding checks. Approve / reject / needs-info change canonical status only —
+<strong>no QuickBooks write-back, no BillAdd, no payment.</strong></p>
+
+<h2>Work queue</h2>
+<table>
+  <thead><tr>
+    <th>Vendor</th><th>Invoice #</th><th>Amount</th><th>Due</th>
+    <th>Coding</th><th>Exceptions / Warnings</th><th>Status</th>
+  </tr></thead>
+  <tbody>
+  {% for b in bills %}
+    <tr>
+      <td><a href="/ui/vendor-bills/{{ b.id }}">{{ b.vendor_name or "—" }}</a></td>
+      <td>{{ b.invoice_no or "—" }}</td>
+      <td>{{ b.amount }}</td>
+      <td>{{ b.due_date or "—" }}</td>
+      <td>{% if b.missing_coding %}<span class="pill warn">missing {{ b.missing_coding | join(", ") }}</span>
+          {% else %}<span class="pill ok">coded</span>{% endif %}</td>
+      <td>
+        {% for e in b.exceptions %}<span class="pill warn">{{ e }}</span> {% endfor %}
+        {% for w in b.warnings %}<span class="pill hist">{{ w }}</span> {% endfor %}
+        {% if not b.exceptions and not b.warnings %}<span class="muted-txt">none</span>{% endif %}
+      </td>
+      <td>{{ b.status }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="muted-txt">No vendor bills yet. Intake one below.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>Intake a vendor invoice</h2>
+<form method="post" action="/ui/vendor-bills/intake">
+  <table>
+    <tr><th>Company</th><td>
+      <select name="company_id" required>
+        {% for c in companies %}<option value="{{ c.id }}">{{ c.legal_name }}</option>{% endfor %}
+      </select></td></tr>
+    <tr><th>Vendor name</th><td><input name="vendor_name" required placeholder="exact or close vendor name"></td></tr>
+    <tr><th>Invoice #</th><td><input name="invoice_no" placeholder="e.g. INV-1042"></td></tr>
+    <tr><th>Amount</th><td><input name="amount" value="0.00"></td></tr>
+    <tr><th>Due date</th><td><input name="due_date" placeholder="YYYY-MM-DD (optional)"></td></tr>
+    <tr><th>Customer:Job</th><td><input name="customer_job" placeholder="project / job"></td></tr>
+    <tr><th>Class</th><td><input name="class_ref" placeholder="phase / class"></td></tr>
+    <tr><th>Item / cost code</th><td><input name="item_cost_code" placeholder="item or cost code"></td></tr>
+    <tr><th>Bank details</th><td><input name="bank_detail" placeholder="acct/routing (fingerprinted, never stored raw)"></td></tr>
+  </table>
+  <button type="submit">Intake invoice</button>
+  <span class="muted-txt">Unmatched vendor → queued as a candidate (no QB write).</span>
+</form>
+{% endblock %}

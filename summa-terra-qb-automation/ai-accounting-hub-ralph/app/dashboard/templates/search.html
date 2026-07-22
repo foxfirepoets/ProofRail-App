@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Search{% endblock %}
+{% block body %}
+<h1>Search</h1>
+<form action="/ui/search" method="get" role="search" style="margin:8px 0 16px;">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search draws, bills, vendors, projects, exceptions…"
+         style="width:60%;max-width:520px;padding:8px 10px;border:1px solid #c4cad6;border-radius:6px;font-size:14px;">
+  <button type="submit">Search</button>
+</form>
+
+{% if results is none %}
+  <p class="muted-txt">Type at least 2 characters to search across draws, bills, vendor bills, vendors,
+    invoices / work items, projects, and open exceptions. Everything here is read-only — QuickBooks
+    write-back is disabled.</p>
+{% elif results.total == 0 %}
+  <div class="msg">No matches for <code>{{ results.q }}</code>. Try a vendor name, draw number,
+    invoice number, project, or exception code.</div>
+{% else %}
+  <p class="muted-txt">{{ results.total }} match{{ '' if results.total == 1 else 'es' }} for
+    <code>{{ results.q }}</code>, grouped by type.</p>
+  {% for grp in results.groups %}
+    <h2>{{ grp.kind }} <span class="muted-txt">({{ grp.count }})</span></h2>
+    <table>
+      <thead><tr><th>Match</th><th>Detail</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for h in grp.hits %}
+        <tr>
+          <td><a href="{{ h.link }}">{{ h.label }}</a></td>
+          <td class="muted-txt">{{ h.sublabel }}</td>
+          <td>{% if h.status %}<span class="pill ok">{{ h.status }}</span>{% else %}—{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% endfor %}
+{% endif %}
+{% endblock %}

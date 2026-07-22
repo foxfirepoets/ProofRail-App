@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% block title %}System B — AI Accounting Hub{% endblock %}
+{% block body %}
+
+<script>
+  window.SUPABASE_URL_AIHUB     = {{ supabase_url_aihub | tojson }};
+  window.SUPABASE_ANON_KEY_AIHUB = {{ supabase_anon_key_aihub | tojson }};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+<style>
+  .sys-b-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .sys-b-badge { display: inline-block; background: #15233b; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: .05em; vertical-align: middle; }
+  .kpi-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0; }
+  .kpi-card { background: #fff; border: 1px solid #e6e8ec; border-radius: 8px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .kpi-label { font-size: 11px; color: #6a7080; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+  .kpi-value { font-size: 26px; font-weight: 700; color: #15233b; line-height: 1; }
+  .kpi-sub { font-size: 11px; color: #6a7080; margin-top: 3px; }
+  .health-strip { display: flex; gap: 18px; background: #fff; border: 1px solid #e6e8ec; border-radius: 8px; padding: 10px 16px; margin: 0 0 18px; align-items: center; flex-wrap: wrap; }
+  .health-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .h-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .h-dot.green { background: #36c46b; }
+  .h-dot.amber { background: #f59e0b; }
+  .h-dot.grey { background: #9ca3af; }
+  .health-label { color: #374151; font-weight: 600; }
+  .health-status { color: #6a7080; }
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin: 22px 0 8px; }
+  .section-header h2 { margin: 0; }
+  .refresh-btn { background: #15233b; color: #fff; border: 0; padding: 6px 14px; border-radius: 5px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .refresh-btn:hover { background: #1d2f4e; }
+  .refresh-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+  .skeleton { background: linear-gradient(90deg, #eef1f6 25%, #e0e4ec 50%, #eef1f6 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; height: 14px; border-radius: 4px; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .skel-row td { padding: 10px; }
+  .no-config-banner { background: #ffe2e2; color: #962020; padding: 12px 16px; border-radius: 6px; border: 1px solid #f3b6b6; margin: 12px 0; }
+  .action-link { font-size: 12px; color: #15233b; text-decoration: none; font-weight: 600; }
+  .action-link:hover { text-decoration: underline; }
+  a.verified-link { color: #276749; font-weight: 600; font-size: 12px; text-decoration: none; }
+  a.verified-link:hover { text-decoration: underline; }
+  .empty-state { padding: 28px 16px; text-align: center; color: #6a7080; font-style: italic; }
+</style>
+
+<div class="sys-b-header">
+  <div>
+    <h1>AI Accounting Hub <span class="sys-b-badge">System B</span></h1>
+    <p class="muted-txt">
+      Read-only view of <code>fdnwlcomuddzmluvbylg</code> via <code>anon</code> RLS key.
+      All writes are blocked at the database layer (SELECT-only policy). No QB write-back reachable from this page (G7).
+    </p>
+  </div>
+  <button class="refresh-btn" id="refreshBtn" onclick="loadAll()">
+    <span id="refreshIcon">↻</span> Refresh
+  </button>
+</div>
+
+{% if not supabase_url_aihub or not supabase_anon_key_aihub %}
+<div class="no-config-banner">
+  ⛔ <strong>SUPABASE_URL_AIHUB</strong> or <strong>SUPABASE_ANON_KEY_AIHUB</strong> is not set.
+  Add both to the Railway env vars and redeploy.
+</div>
+{% endif %}
+
+<!-- KPI Bar -->
+<div class="kpi-bar" id="kpiBar">
+  <div class="kpi-card"><div class="kpi-label">Total Bills</div><div class="kpi-value" id="kpiBills">—</div><div class="kpi-sub">all statuses</div></div>
+  <div class="kpi-card"><div class="kpi-label">Awaiting Approval</div><div class="kpi-value" id="kpiPending">—</div><div class="kpi-sub">status = verified</div></div>
+  <div class="kpi-card"><div class="kpi-label">Draw Packages</div><div class="kpi-value" id="kpiDraws">—</div><div class="kpi-sub">all statuses</div></div>
+  <div class="kpi-card"><div class="kpi-label">Total Draw Value</div><div class="kpi-value" id="kpiDrawVal">—</div><div class="kpi-sub">sum package_total</div></div>
+</div>
+
+<!-- Pipeline Health -->
+<div class="health-strip">
+  <strong style="font-size:12px;color:#374151;">Pipeline Health</strong>
+  <div class="health-item"><span class="h-dot green"></span><span class="health-label">Integration Active</span><span class="health-status">— outbox delivery running</span></div>
+  <div class="health-item"><span class="h-dot green"></span><span class="health-label">Temporal Workflow Engine</span><span class="health-status">— Connected</span></div>
+  <div class="health-item"><span class="h-dot green"></span><span class="health-label">Gate 1 Proof (InvoiceProof)</span><span class="health-status">— Active</span></div>
+  <div class="health-item" style="margin-left:auto;"><span class="muted-txt" id="lastRefreshed">Not yet loaded</span></div>
+</div>
+
+<!-- Bills Section -->
+<div class="section-header">
+  <h2>Bills</h2>
+  <span class="muted-txt" id="billsCount"></span>
+</div>
+<div id="billsErr" class="err" style="display:none;"></div>
+<table id="billsTable">
+  <thead>
+    <tr>
+      <th>Status</th>
+      <th>Vendor ID</th>
+      <th>Amount</th>
+      <th>Gmail Tracker ID</th>
+      <th>Draft Date</th>
+      <th>Workflow ID</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody id="billsBody">
+    <tr class="skel-row"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+    <tr class="skel-row"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+    <tr class="skel-row"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+  </tbody>
+</table>
+
+<!-- Draw Packages Section -->
+<div class="section-header" style="margin-top:28px;">
+  <h2>Draw Packages</h2>
+  <span class="muted-txt" id="drawsCount"></span>
+</div>
+<div id="drawsErr" class="err" style="display:none;"></div>
+<table id="drawsTable">
+  <thead>
+    <tr>
+      <th>Status</th>
+      <th>Company</th>
+      <th>Draw #</th>
+      <th>Package Total</th>
+      <th>Fee Opportunity ID</th>
+      <th>Created</th>
+    </tr>
+  </thead>
+  <tbody id="drawsBody">
+    <tr class="skel-row"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+    <tr class="skel-row"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+  </tbody>
+</table>
+
+<script>
+(function () {
+  'use strict';
+
+  var url     = window.SUPABASE_URL_AIHUB      || '';
+  var anonKey = window.SUPABASE_ANON_KEY_AIHUB || '';
+
+  function esc(v) {
+    if (v === null || v === undefined) return '<em class="muted-txt">—</em>';
+    return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function fmtAmt(v) {
+    if (v === null || v === undefined) return '<em class="muted-txt">—</em>';
+    return '$' + parseFloat(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtDate(v) {
+    if (!v) return '<em class="muted-txt">—</em>';
+    try { return new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); } catch (_) { return esc(v); }
+  }
+  function pill(s) {
+    if (!s) return '<em class="muted-txt">—</em>';
+    var cls = (s === 'approved' || s === 'paid' || s === 'verified') ? 'ok'
+            : (s === 'rejected' || s === 'failed' || s === 'exception') ? 'warn'
+            : 'hist';
+    return '<span class="pill ' + cls + '">' + esc(s) + '</span>';
+  }
+  function truncCode(v, n) {
+    if (!v) return '<em class="muted-txt">—</em>';
+    var s = String(v);
+    return '<code style="font-size:11px">' + esc(s.slice(0, n || 14)) + (s.length > (n || 14) ? '…' : '') + '</code>';
+  }
+  function showErr(id, msg) {
+    var el = document.getElementById(id);
+    el.textContent = '⛔ ' + msg;
+    el.style.display = '';
+  }
+  function clearErr(id) { document.getElementById(id).style.display = 'none'; }
+
+  if (!url || !anonKey) {
+    document.getElementById('billsBody').innerHTML = '<tr><td colspan="7" class="empty-state">SUPABASE_URL_AIHUB or SUPABASE_ANON_KEY_AIHUB not configured.</td></tr>';
+    document.getElementById('drawsBody').innerHTML = '<tr><td colspan="6" class="empty-state">SUPABASE_URL_AIHUB or SUPABASE_ANON_KEY_AIHUB not configured.</td></tr>';
+    return;
+  }
+
+  var aihubClient = supabase.createClient(url, anonKey);
+
+  function setKpi(id, val) { document.getElementById(id).textContent = val; }
+
+  function loadAll() {
+    var btn = document.getElementById('refreshBtn');
+    var icon = document.getElementById('refreshIcon');
+    btn.disabled = true;
+    icon.textContent = '⟳';
+
+    clearErr('billsErr');
+    clearErr('drawsErr');
+
+    var p1 = loadBills();
+    var p2 = loadDraws();
+
+    Promise.all([p1, p2]).then(function () {
+      btn.disabled = false;
+      icon.textContent = '↻';
+      document.getElementById('lastRefreshed').textContent =
+        'Refreshed ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    });
+  }
+
+  window.loadAll = loadAll;
+
+  function loadBills() {
+    return aihubClient
+      .from('bills')
+      .select('id, status, amount, vendor_id, gmail_tracker_id, raw_extensions, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100)
+      .then(function (res) {
+        if (res.error) {
+          showErr('billsErr', res.error.message || JSON.stringify(res.error));
+          document.getElementById('billsBody').innerHTML = '';
+          return;
+        }
+        var rows = res.data || [];
+        var pending = rows.filter(function(b) { return b.status === 'verified'; }).length;
+        setKpi('kpiBills', rows.length);
+        setKpi('kpiPending', pending);
+        document.getElementById('billsCount').textContent = rows.length + ' record(s)';
+
+        var tbody = document.getElementById('billsBody');
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No bills found in System B.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = rows.map(function (b) {
+          var wfId = (b.raw_extensions && b.raw_extensions.workflow_id) ? b.raw_extensions.workflow_id : null;
+          var action = (b.status === 'verified')
+            ? '<a href="/approve" class="verified-link">→ Approve</a>'
+            : '<em class="muted-txt">—</em>';
+          return '<tr>'
+            + '<td>' + pill(b.status)                 + '</td>'
+            + '<td>' + truncCode(b.vendor_id, 20)     + '</td>'
+            + '<td>' + fmtAmt(b.amount)               + '</td>'
+            + '<td>' + truncCode(b.gmail_tracker_id, 24) + '</td>'
+            + '<td>' + fmtDate(b.created_at)          + '</td>'
+            + '<td>' + truncCode(wfId, 14)            + '</td>'
+            + '<td>' + action                         + '</td>'
+            + '</tr>';
+        }).join('');
+      });
+  }
+
+  function loadDraws() {
+    return aihubClient
+      .from('draw_packages')
+      .select('id, status, company_id, draw_number, package_total, raw_extensions, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100)
+      .then(function (res) {
+        if (res.error) {
+          showErr('drawsErr', res.error.message || JSON.stringify(res.error));
+          document.getElementById('drawsBody').innerHTML = '';
+          return;
+        }
+        var rows = res.data || [];
+        var total = rows.reduce(function(sum, d) { return sum + parseFloat(d.package_total || 0); }, 0);
+        setKpi('kpiDraws', rows.length);
+        setKpi('kpiDrawVal', total >= 1000
+          ? '$' + (total / 1000).toFixed(1) + 'k'
+          : '$' + total.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+        document.getElementById('drawsCount').textContent = rows.length + ' record(s)';
+
+        var tbody = document.getElementById('drawsBody');
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No draw packages found in System B.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = rows.map(function (d) {
+          var feeOppId = (d.raw_extensions && d.raw_extensions.gmail_fee_opportunity_id)
+            ? d.raw_extensions.gmail_fee_opportunity_id : null;
+          return '<tr>'
+            + '<td>' + pill(d.status)              + '</td>'
+            + '<td>' + truncCode(d.company_id, 20) + '</td>'
+            + '<td>' + esc(d.draw_number)          + '</td>'
+            + '<td>' + fmtAmt(d.package_total)     + '</td>'
+            + '<td>' + truncCode(feeOppId, 24)     + '</td>'
+            + '<td>' + fmtDate(d.created_at)       + '</td>'
+            + '</tr>';
+        }).join('');
+      });
+  }
+
+  loadAll();
+}());
+</script>
+{% endblock %}

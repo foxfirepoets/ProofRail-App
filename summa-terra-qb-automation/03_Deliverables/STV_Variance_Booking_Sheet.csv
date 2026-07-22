@@ -1,0 +1,10 @@
+JE#,Entity / QB File,Date (bank-clear),Debit Account,Credit Account,Amount,Payee,Memo / Reference,Support Doc,Status / Notes
+JE1,Freeman Ranch,2026-04-07,Business Licenses & Permits,Freeman Ranch Checking #78480,95.00,SPI Agent Solutions,Registered-agent/permit fee,workbook row 163,Ready to post
+JE2,Freeman Ranch,2026-04-15,Professional Fees,Freeman Ranch Checking #78480,440.81,Kenison Dudley Crawford,"Legal retainer refill, Invoice 28684",workbook row 164,Ready to post
+JE3,Ventura Landing,2026-03-05,Professional Fees,Ventura Landing #17470,1350.00,Ricks & Co. (CPA),2025 K-1 filing fee,workbook row 508,Ready to post
+JE4,Ventura Landing,CONFIRM (Check 262 clear date),Professional Fees,Ventura Landing #17470,42.50,Leggett Clemons Crandall PLLC,"Legal, Invoice 15268, Check 262",workbook row 509,Ready to post — confirm clear date
+JE5,Ventura Landing,CONFIRM DATE,Professional Fees,Ventura Landing #17470,130.00,Capitol Services,Registered agent services,workbook row 510,"CONFIRM DATE — workbook cell shows 9/12/2025 (likely copy error; true period 2026); fix before posting"
+JE6,RM Texas Partners,2026-03-13,Professional Fees,RM Texas Partners #66510,1000.00,Ricks & Co. (CPA),2025 K-1 filing fee,workbook row 354,Ready to post
+JE7,RM Texas Partners,2026-05-01,RM Texas Partners #66510,Development Costs – Recording Fees (original expense acct),18.00,"Capital Title of Texas, LLC","Excess recording-fee REFUND (deposit): debit bank, credit original expense","workbook row 358; dataset line 613",Ready to post — confirm original expense acct
+JE8,Rock Creek,2026-04-08,Professional Fees,Rock Creek #82340,800.00,Ricks & Co. (CPA),2025 K-1 filing fee (row 206 dated 3/05 = invoice date; cleared bank 4/08),"workbook row 206; dataset line 619",Ready to post
+JE9,Rock Creek,2026-05-05,HOLD,HOLD,800.00,UNKNOWN — pull check image,"SECOND $800 check, fitid 2daa1928…, not in workbook",,HOLD — VERIFY NOT DUPLICATE before posting; if duplicate CPA payment, initiate stop-payment/recovery

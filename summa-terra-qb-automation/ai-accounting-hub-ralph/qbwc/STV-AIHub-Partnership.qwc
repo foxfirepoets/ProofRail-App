@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<QBWCXML>
+  <AppName>STV AI Accounting Hub (Partnership)</AppName>
+  <AppID></AppID>
+  <AppURL>https://ai-accounting-hub-production.up.railway.app/qbwc</AppURL>
+  <AppDescription>Summa Terra Ventures — canonical AP/bill sync into the PARTNERSHIP QuickBooks file (approved, proof-gated bills only).</AppDescription>
+  <AppSupport>https://ai-accounting-hub-production.up.railway.app/health</AppSupport>
+  <UserName>stv-aihub</UserName>
+  <OwnerID>{B8F1C5F3-3166-4BBE-9010-67FFE4DC34E7}</OwnerID>
+  <FileID>{E0B431DE-EDE7-44D1-864C-512DD6E458B5}</FileID>
+  <QBType>QBFS</QBType>
+  <Scheduler>
+    <RunEveryNMinutes>5</RunEveryNMinutes>
+  </Scheduler>
+  <IsReadOnly>false</IsReadOnly>
+</QBWCXML>

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Sync Health{% endblock %}
+{% block body %}
+<h1>Sync Health &amp; QuickBooks Status</h1>
+<p><span class="pill warn">SHADOW MODE</span> QB write-back: <strong>{{ sync.qb_write_back }}</strong></p>
+
+<h2>Canonical store</h2>
+<table><tbody>
+  <tr><th>Companies</th><td>{{ sync.counts.companies }}</td>
+      <th>Vendors</th><td>{{ sync.counts.vendors }}</td></tr>
+  <tr><th>Bills</th><td>{{ sync.counts.bills }}</td>
+      <th>Draw packages</th><td>{{ sync.counts.draws }}</td></tr>
+</tbody></table>
+
+<h2>QBWC poll cadence</h2>
+<table><tbody>
+  <tr><th>Status</th><td><span class="pill warn">{{ sync.qbwc_poll_cadence.status }}</span></td></tr>
+  <tr><th>Cadence (s)</th><td>{{ sync.qbwc_poll_cadence.value_seconds or "— not measured" }}</td></tr>
+  <tr><th>Detail</th><td>{{ sync.qbwc_poll_cadence.detail }}</td></tr>
+</tbody></table>
+
+<h2>Rightworks persistent poller</h2>
+<table><tbody>
+  <tr><th>Ticket status</th><td><span class="pill warn">{{ sync.rightworks_persistent_poller.status }}</span></td></tr>
+  <tr><th>Ticket</th><td>{{ sync.rightworks_persistent_poller.ticket or "— none filed" }}</td></tr>
+  <tr><th>Detail</th><td>{{ sync.rightworks_persistent_poller.detail }}</td></tr>
+</tbody></table>
+
+<h2>AuditProof status for sync runs</h2>
+<table><tbody>
+  <tr><th>Passed proof bundles</th><td>{{ sync.auditproof_runs.passed_bundles }}</td></tr>
+</tbody></table>
+<p class="muted-txt">Live adapter write-back stays disabled until the two open poller spikes are resolved
+(cadence measurement + written Rightworks approval). No inbound listener; outbound poll only.</p>
+{% endblock %}

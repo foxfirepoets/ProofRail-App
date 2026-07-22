@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Accounting Work Queue{% endblock %} — AI Accounting Hub</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+           margin: 0; color: #1a1a1a; background: #f5f6f8; }
+    .shadow-banner { background: #7a1f1f; color: #fff; padding: 10px 18px; font-weight: 700;
+           letter-spacing: .03em; position: sticky; top: 0; z-index: 100;
+           border-bottom: 3px solid #ffd23f; display: flex; justify-content: space-between;
+           align-items: center; }
+    .shadow-banner .sub { font-weight: 400; font-size: 12px; opacity: .9; }
+    .layout { display: flex; align-items: flex-start; }
+    .sidebar { background: #15233b; width: 230px; min-height: calc(100vh - 49px); padding: 10px 0;
+               flex-shrink: 0; position: sticky; top: 49px; overflow-y: auto;
+               max-height: calc(100vh - 49px); }
+    .sidebar a { display: flex; justify-content: space-between; align-items: center;
+                 color: #cdd9ef; text-decoration: none; font-size: 13px; padding: 5px 16px; }
+    .sidebar a:hover { color: #fff; background: #1d2f4e; }
+    .sidebar a.home { font-weight: 700; color: #fff; }
+    .navgroup { color: #6f82a6; font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
+                padding: 12px 16px 3px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .dot.ok { background: #36c46b; } .dot.pend { background: #6f82a6; }
+    main { padding: 20px 24px; max-width: 1100px; margin: 0; flex: 1; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+             gap: 12px; margin: 8px 0 18px; }
+    .card { display: block; background: #fff; border: 1px solid #e6e8ec; border-radius: 8px;
+            padding: 12px 14px; text-decoration: none; color: #1a1a1a;
+            box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+    .card:hover { border-color: #15233b; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+    .card-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .card-title { font-weight: 600; font-size: 14px; }
+    .card-desc { margin: 6px 0; min-height: 32px; }
+    .card-count { font-size: 12px; color: #15233b; font-weight: 600; }
+    h1 { font-size: 22px; } h2 { font-size: 17px; margin-top: 28px; }
+    table { border-collapse: collapse; width: 100%; background: #fff; margin: 8px 0 20px;
+            box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e6e8ec; font-size: 13px; }
+    th { background: #eef1f6; font-weight: 600; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px;
+            font-weight: 600; }
+    .pill.hist { background: #fde9c8; color: #8a5a00; }
+    .pill.ok { background: #d6f3df; color: #1d6b38; }
+    .pill.warn { background: #ffe2e2; color: #962020; }
+    .err { background: #ffe2e2; color: #962020; padding: 10px 14px; border-radius: 6px;
+           border: 1px solid #f3b6b6; margin: 10px 0; }
+    .msg { background: #e6f0ff; color: #1a3f7a; padding: 10px 14px; border-radius: 6px;
+           border: 1px solid #b6cdf3; margin: 10px 0; }
+    .actions form { display: inline; }
+    button { background: #15233b; color: #fff; border: 0; padding: 7px 12px; border-radius: 5px;
+             font-size: 13px; cursor: pointer; }
+    button.danger { background: #7a1f1f; } button.muted { background: #5a6577; }
+    .muted-txt { color: #6a7080; font-size: 12px; }
+    code { background: #eef1f6; padding: 1px 5px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div class="shadow-banner">
+    <span>⛔ {{ SHADOW_BANNER }}</span>
+    <span class="sub">{{ SHADOW_SUBTEXT }}</span>
+  </div>
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="home" href="/ui">▸ Work Queue</a>
+      <form class="navsearch" action="/ui/search" method="get" role="search"
+            style="padding:6px 12px;">
+        <input type="search" name="q" placeholder="Search…" aria-label="Search"
+               style="width:100%;padding:5px 8px;border:0;border-radius:5px;font-size:12px;">
+      </form>
+      <a href="/ui/attention"><span>⚑ What Needs My Attention</span></a>
+      <a href="/approve"><span>✅ Approval Queue</span></a>
+      {% for group, mods in WORK_QUEUE_GROUPS %}
+        <div class="navgroup">{{ group }}</div>
+        {% for m in mods %}
+          <a href="{{ m.route }}">
+            <span>{{ m.title }}</span>
+            <span class="dot {{ 'ok' if m.status == 'functional' else 'pend' }}"></span>
+          </a>
+        {% endfor %}
+      {% endfor %}
+      <div class="navgroup">Records</div>
+      <a href="/ui/companies"><span>Companies</span></a>
+      <a href="/ui/vendors"><span>Vendors</span></a>
+      <a href="/ui/bills"><span>Bills</span></a>
+      <a href="/ui/sync"><span>Sync Health</span></a>
+      <div class="navgroup">System B</div>
+      <a href="/ui/system-b"><span>AI Hub Bills &amp; Draws</span>
+        <span class="dot ok" title="read-only RLS"></span></a>
+    </aside>
+    <main>
+      {% if error %}<div class="err">⛔ {{ error }}</div>{% endif %}
+      {% if msg %}<div class="msg">{{ msg }}</div>{% endif %}
+      {% block body %}{% endblock %}
+      <p class="muted-txt">AI Accounting Hub v{{ APP_VERSION }} · shadow mode · QB write-back disabled</p>
+    </main>
+  </div>
+</body>
+</html>

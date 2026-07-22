@@ -1,0 +1,19 @@
+Priority,Entity / Account,Bank,Accounts to pull,Transaction data we ALREADY have (through),Need to pull (range),Status,Notes
+P0,STVE (STV Entitlement Services) - UCCU,UCCU,Checking + Money Market,"None clean (UCCU not in dataset)",Mar 1 - Jun 25 2026,AWAITING PULL,Main company file; highest priority.
+P0,STVE - Mountain America (MACU),Mountain America,Checking + Sweep (2215),Through 2026-03-31,Apr 1 - Jun 25 2026,AWAITING PULL,Flagged NO QB FILE IMPORT = manual entry.
+P0,STDG - UCCU,UCCU,Checking + Money Market,"None clean (UCCU not in dataset)",Mar 1 - Jun 25 2026,AWAITING PULL,STDG has UCCU + MACU + Granite - pull all three.
+P0,STDG - Mountain America (MACU),Mountain America,2212 Checking + Sweep,Through ~2026-03-31,Apr 1 - Jun 25 2026,AWAITING PULL,Have STDG-MACU/Checking/SWEEP/MM through Mar-Apr.
+P0,STDG - Granite,Granite Credit Union,Checking,Stale,Mar 1 - Jun 25 2026,AWAITING PULL,~$730K unreconciled; NO QB FILE IMPORT = manual entry.
+P0,Summa Elite - UCCU,UCCU,Checking + Money Market,MM May 2026 only,Mar 1 - Jun 25 2026,AWAITING PULL,Dev fee accrued as equity ~$1.0M (context).
+P0,12SB (Hunters Landing),UCCU (confirm),Checking (+ MM if any),Partial / unlabeled,Mar 1 - Jun 25 2026,AWAITING PULL,Confirm bank at login; partner contributions ~$12.77M.
+P0,HLN,UCCU,Checking (…48560) + Money Market,Fragmentary,Mar 1 - Jun 25 2026,AWAITING PULL,FRAUD: old …92090 closed 12/05/2025 -> new …48560. Pull NEW acct. Old acct needs ~$118750 write-off JE. Also the $317K Arixa plug pending settlement stmt.
+P0,Madison,Central Bank,Madison Central Checking + MM,Checking May 2026 only,Mar 1 - Jun 25 2026,AWAITING PULL,Central Bank (NOT UCCU). Earnest money $100K on books.
+P0,Union (Union Walk),UCCU,Checking,Unlabeled / partial,Mar 1 - Jun 25 2026,AWAITING PULL,Lazarus funds Quincy + Union cash calls (context).
+P1,AW1,UCCU,Checking + Money Market,Stale (behind since Oct 2025),Oct 1 2025 - Jun 25 2026,AWAITING PULL,MOST behind of all accounts - longer pull range.
+P1,Quincy,UCCU,Checking,Through ~early 2026,Mar 1 - Jun 25 2026,AWAITING PULL,Negative equity ~ -$229K (context).
+P1,Ledges at Moab,UCCU,Checking,Through ~early 2026,Mar 1 - Jun 25 2026,AWAITING PULL,
+P1,Freeman Ranch,UCCU,Checking (#78480),Have variance items only,Mar 1 - Jun 25 2026,AWAITING PULL,4 variance JEs already drafted (booking sheet).
+P1,Vic,UCCU,Checking,Through ~early 2026,Mar 1 - Jun 25 2026,AWAITING PULL,Perry Underwood bought out ~$1M May 2026 (context).
+P1,Lazarus,UCCU,Checking,Through ~early 2026,Mar 1 - Jun 25 2026,AWAITING PULL,Funds Quincy + Union cash calls.
+P2,Ensign,(have .qbo),n/a,Through 2026-04-20,Apr 21 - Jun 25 2026,PARTIAL,Mostly current; small top-up pull.
+P2,Ventura / RM Texas / Rock Creek,UCCU,Checking,Variance items captured,Mar 1 - Jun 25 2026,AWAITING PULL,Variance JEs already drafted; confirm no other Q2 activity.

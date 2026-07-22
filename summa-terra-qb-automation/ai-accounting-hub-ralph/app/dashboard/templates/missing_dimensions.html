@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Missing Customer:Job / Class / Item Cleanup{% endblock %}
+{% block body %}
+<h1>Missing Customer:Job / Class / Item Cleanup</h1>
+<p class="muted-txt">Read-only aggregation of every item across modules missing a Customer:Job,
+Class, or Item dimension, linking to fix coding on the source item. No write-back.</p>
+
+<h2>Items missing dimensions <span class="muted-txt">({{ rows | length }})</span></h2>
+<table>
+  <thead><tr>
+    <th>Source</th><th>Reference</th><th>Entity</th><th>Missing</th><th>Amount</th><th>Fix</th>
+  </tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{{ r.source }}</td>
+      <td><a href="{{ r.link }}">{{ r.reference }}</a></td>
+      <td>{{ r.entity }}</td>
+      <td><span class="pill warn">{{ r.missing | join(", ") }}</span></td>
+      <td>{{ r.amount if r.amount is not none else "—" }}</td>
+      <td><a href="{{ r.link }}">fix coding →</a></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="pill ok">No items missing dimensions.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

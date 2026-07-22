@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Vendor Bill {{ b.invoice_no or b.id[:8] }}{% endblock %}
+{% block body %}
+<p><a href="/ui/vendor-bills">← Vendor Bills</a></p>
+<h1>Vendor Bill {{ b.invoice_no or "(no invoice #)" }}</h1>
+
+<table>
+  <tr><th>Vendor</th><td>{{ b.vendor_name or "—" }}
+    {% if b.vendor_id %}(<a href="/ui/vendors/{{ b.vendor_id }}">vendor</a>){% endif %}</td></tr>
+  <tr><th>Amount</th><td>{{ b.amount }}</td></tr>
+  <tr><th>Due date</th><td>{{ b.due_date or "—" }}</td></tr>
+  <tr><th>Customer:Job</th><td>{{ b.customer_job or "—" }}</td></tr>
+  <tr><th>Class</th><td>{{ b.class_ref or "—" }}</td></tr>
+  <tr><th>Item / cost code</th><td>{{ b.item_cost_code or "—" }}</td></tr>
+  <tr><th>Status</th><td>{{ b.status }}</td></tr>
+  <tr><th>QuickBooks</th><td>{{ b.qb_txn_id or "— (not posted — shadow mode)" }}</td></tr>
+</table>
+
+<h2>Exceptions &amp; warnings</h2>
+{% if b.exceptions or b.warnings %}
+  <p>
+  {% for e in b.exceptions %}<span class="pill warn">{{ e }}</span> {% endfor %}
+  {% for w in b.warnings %}<span class="pill hist">{{ w }}</span> {% endfor %}
+  </p>
+  {% if b.missing_coding %}<p class="muted-txt">Missing coding: {{ b.missing_coding | join(", ") }}.</p>{% endif %}
+  {% if b.has_warnings %}<p class="muted-txt">Bank-change warning compares a fingerprint only — raw bank details are never stored.</p>{% endif %}
+{% else %}
+  <p class="muted-txt">No exceptions or warnings.</p>
+{% endif %}
+
+<h2>Actions</h2>
+<div class="actions">
+  <form method="post" action="/ui/vendor-bills/{{ b.id }}/approve"><button type="submit">Approve for accounting</button></form>
+  <form method="post" action="/ui/vendor-bills/{{ b.id }}/needs-info"><button type="submit" class="muted">Mark needs info</button></form>
+  <form method="post" action="/ui/vendor-bills/{{ b.id }}/reject"><button type="submit" class="danger">Reject</button></form>
+</div>
+<p class="muted-txt">Every action changes canonical status only and writes an audit-trail row.
+No QuickBooks write-back, no BillAdd, no payment.</p>
+
+<h2>Audit trail / proof</h2>
+<table>
+  <thead><tr><th>Action</th><th>Actor</th><th>Row hash</th><th>Outputs</th></tr></thead>
+  <tbody>
+  {% for a in b.audit_trail %}
+    <tr><td>{{ a.action_type }}</td><td>{{ a.actor }}</td>
+        <td><code>{{ a.row_hash }}…</code></td>
+        <td class="muted-txt">{{ a.outputs }}</td></tr>
+  {% else %}
+    <tr><td colspan="4" class="muted-txt">No audit rows yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

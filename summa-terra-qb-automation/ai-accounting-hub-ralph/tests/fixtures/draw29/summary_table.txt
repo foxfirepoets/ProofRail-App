@@ -1,0 +1,149 @@
+                             BUILDER'S DRAW            REQUEST SUMMARY
+
+ITEM  #  INV         #       PAYABLE TO:               DESCRIPTION             INV AMOUNT   RETAINAGE (-)    AMOUNT DUE
+
+003      HL 2508             RICH DEVELOPMENT INC.     Site Concrete           $5,949.22                     $5,949.22
+
+004      HL 2508             RICH DEVELOPMENT INC.     UDOT Concrete           $20,443.94                    $20,443.94
+
+026      HL 2508             RICH DEVELOPMENT INC.     BFS Material            $1,710.87                     $1,710.87
+
+068      HL 2508             RICH DEVELOPMENT INC.     Profit                  $150,000.00                   $150,000.00
+
+060      HL 2508             RICH DEVELOPMENT INC.     Temp Power              $373.40                       $373.40
+
+056      HL 2508             RICH DEVELOPMENT INC.     Coulson Cleaning        $2,982.00                     $2,982.00
+
+067      HL 2508             RICH DEVELOPMENT INC.     Supervision             $22,500.00                    $22,500.00
+
+062      AC25024, AC25031    ALTURA CAMERAS LLC        Security Cameras        $900.00                       $900.00
+
+032      697265, 697266      BEAZER LOCK & KEY         Hardware                $15,694.12                    $15,694.12
+
+007      Retention           BOARDWALK                 Framing retention                    ($  (851.75)     $851.75
+
+         12722-HLR, 293536,
+
+005      12484-HLV, 12486-   BRONCO FENCE COMPANY      Fencing                 $36,947.31   ($  (119.00)     $37,066.31
+
+                HLP
+
+065             2583         CB BUILDING               Materials, hardware     $381.67                       $381.67
+
+046             2583         CB BUILDING               Signage                 $63.10                        $63.10
+
+059      2998, 3070          CEARLEY                   SWPPP                   $675.00                       $675.00
+
+007      505114              DIAS QUALITY FRAMING      Amenities ramp/framing  $2,027.00                     $2,027.00
+
+053      13769, 14469, 7971  DUMPS EASY                Dumpster                $1,061.89                     $1,061.89
+
+023      Pay App 6           EVOLUTION CONSTRUCTION    Gypcrete                             ($  (7,320.73)   $7,320.73
+
+014      Pay App 3           EVOLUTION CONSTRUCTION    Storefront                           ($  (7,100.83)   $7,100.83
+
+016      100222, 100279,     FORTIFIED DOORWORKS       HM Doors, Material      $39,070.13                    $39,070.13
+
+         100346
+
+019      8/11/25             FOX & HOUND               Electrical              $78,947.37   ($  3,947.37)    $75,000.00
+
+024      822064, 822117,     HANSEN ALL SEASON         Insulation                           ($  (9,686.60)   $9,686.60
+
+         822113              INSULATION
+
+063      84897, 84948        INTERMOUNTAIN TESTING     Special Inspections     $1,232.20                     $1,232.20
+
+048      403, 404            K CARTER CONSTRUCTION     Shed                    $4,353.84                     $4,353.84
+
+046      402, 403            K CARTER CONSTRUCTION     Signage                 $463.95                       $463.95
+
+047             403          K CARTER CONSTRUCTION     Fire Pit Set            $1,796.44                     $1,796.44
+
+022             403          K CARTER CONSTRUCTION     Fire Caulk              $64.30                        $64.30
+
+025             2257         LARA & SONS CONSTRUCTION  Drywall                 $37,720.00       -$62,155.30  $99,875.30
+
+037             2257         LARA & SONS CONSTRUCTION  Exteriors               $0.00            -$33,845.23  $33,845.23
+
+036      HL 4,  Retention    MC SIDING                 Brick                   $16,985.00       -$22,500.00  $39,485.00
+
+062      7/1/25-1            MC SIDING                 Security Lockup         $3,000.00        $0.00        $3,000.00
+012  9600, 9605, 9614       MERAKI STEEL                Steel                     $120,414.50      -$17,699.18  $138,113.68
+
+     836955, 837337,        METRO PORCELAIN &
+
+017  837276, 837514,        FIBERGLASS                  Tub Repair                $1,200.00                     $1,200.00
+
+     837712
+
+010  4115, 4204             MY ROOF                     Decking                                    -$1,596.84   $1,596.84
+
+049  L2994-3                NEXT DAY BLINDS             Blinds                                     -$2,299.60   $2,299.60
+
+065  00062856               OGDEN CITY                  Permit Extension          $100.00                       $100.00
+
+030  202501425              Overhead Door Company       Garage Doors              $1,361.50                     $1,361.50
+
+067  2514, 2517, 2518       PERENNIAL WEST LLC          Office Hours              $6,000.00                     $6,000.00
+
+     28621, 28732, 28639,
+
+028  28435, 28872, 29400,   Performance Painting Co     Paint                     $26,130.00       -$16,093.21  $42,223.21
+
+     29399, 29402, 29401,
+
+     29403, 29293
+
+009  8063                   PERKES ROOFING              Roofing                                    -$3,746.45   $3,746.45
+
+035  L4538, L4542, L4394-8  POULSEN FINISH & D�COR      Flooring                  $3,620.00    ($  (13,571.45)  $17,191.45
+
+003  14125                  PRECISION CONCRETE PUMPING  Concrete Pumping          $1,180.00                     $1,180.00
+
+053  2520                   PRO INTERIORS               Garbage haul & dump       $51.00                        $51.00
+
+065  2518                   PRO INTERIORS               Materials                 $241.21                       $241.21
+
+033  Pay App 3, Pay App 4   SELECT SPECIALTIES          Fire supplies             $1,268.25        -$320.00     $1,588.25
+
+034  4458, 4592, 4631,      SHOWER SOLUTIONS            Mirrors                   $1,880.91        -$318.50     $2,199.41
+
+     4567, 4508,
+
+027  0178, 1002, Retention  SOUTH PEAK CONSTRUCTION     Finish Trim LLC           $13,616.01       -$5,040.83   $18,656.84
+
+                            LLC
+
+003  1118-HL, Retention     SUNRISE ELITE               Site Concrete             $31,802.79       -$4,743.84   $36,546.63
+
+004  1118-HL, Retention     SUNRISE ELITE               UDOT Concrete             $29,280.00                    $29,280.00
+
+057  29928, 29518           SWEEP N UTAH                Street Sweeping           $777.50                       $777.50
+
+046  123892                 STRIPE ZONE                 Parking Lot Signage       $1,800.00                     $1,800.00
+
+015  1000709468             TK ELEVATOR CORPORATION     Elevator                  $0.00            -$14,012.90  $14,012.90
+
+021  Final Pay App          TST FIRE PROTECTION         Fire Sprinkler Dry Heads  $0.00            -$31,124.47  $31,124.47
+
+052  0007034864             UNITED SITE SERVICES        Porta Potty               $332.07                       $332.07
+
+010  Final Pay App          URBANE                      Decking                   $4,605.00        -$4,242.80   $8,847.80
+
+056  24358, 24357, 24424    WASATCH CONSTRUCTION        Cleaning                  $6,147.00                     $6,147.00
+
+                            CLEAN UP
+
+056  1009, 1011, 1013,      WASATCH PREMIER HOME        Cleaning                  $8,140.00                     $8,140.00
+
+     1014                   SERVICES
+
+014  Retention              WEBB'S WINDOWS, LLC         Windows                                    -3,113.05    $3,113.05
+
+                                                                                  $705,290.49  -$257,555.19     $962,845.68
+
+     CONTRACTORS SIGNATURE                                                                     Total This Draw  $962,845.68
+
+                  DATE
+

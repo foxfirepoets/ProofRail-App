@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Work Queue{% endblock %}
+{% block body %}
+<h1>Accounting Work Queue</h1>
+<p class="muted-txt">The control center for all day-to-day real-estate-development accounting workflows.
+  Draw Review is live; the other modules are queued for build. QuickBooks is a batch sink —
+  write-back is disabled.</p>
+{% if overview.attention %}
+<div class="card" style="border-left:4px solid #7a1f1f;">
+  <div class="card-h">
+    <span class="card-title">⚑ What Needs My Attention Today</span>
+    <a href="/ui/attention" class="card-count">{{ overview.attention.total }} item(s) — view all →</a>
+  </div>
+  <div class="cards" style="margin-top:10px;">
+  {% for grp in overview.attention.groups %}
+    <a class="card" href="/ui/attention">
+      <div class="card-h">
+        <span class="card-title">{{ grp.kind }}</span>
+        <span class="pill {{ 'warn' if grp.urgency == 'high' else ('hist' if grp.urgency == 'medium' else 'ok') }}">{{ grp.count }}</span>
+      </div>
+      <div class="muted-txt card-desc">{{ grp.urgency }} urgency</div>
+    </a>
+  {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% for grp in overview.groups %}
+  <h2>{{ grp.group }}</h2>
+  <div class="cards">
+  {% for m in grp.modules %}
+    <a class="card" href="{{ m.route }}">
+      <div class="card-h">
+        <span class="card-title">{{ m.title }}</span>
+        {% if m.status == "functional" %}
+          <span class="pill ok">Functional</span>
+        {% else %}
+          <span class="pill warn">Pending</span>
+        {% endif %}
+      </div>
+      <div class="muted-txt card-desc">{{ m.description }}</div>
+      <div class="card-count">{{ m.count_label }}</div>
+    </a>
+  {% endfor %}
+  </div>
+{% endfor %}
+<p class="muted-txt">{{ overview.module_count }} modules · shadow mode · QB write-back {{ overview.qb_write_back }}</p>
+{% endblock %}

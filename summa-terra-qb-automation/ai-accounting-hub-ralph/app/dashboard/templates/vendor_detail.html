@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ vendor.name }}{% endblock %}
+{% block body %}
+<h1>{{ vendor.name }}</h1>
+<table><tbody>
+  <tr><th>Company</th><td><a href="/ui/companies/{{ vendor.company_id }}">{{ vendor.company_id }}</a></td></tr>
+  <tr><th>QB ListID</th><td>{{ vendor.qb_list_id or "—" }}</td></tr>
+  <tr><th>QB EditSequence</th><td>{{ vendor.qb_edit_sequence or "—" }}</td></tr>
+  <tr><th>SwarmScore</th><td>{{ vendor.swarmscore if vendor.swarmscore is not none else "—" }}</td></tr>
+  <tr><th>Bank fingerprint</th><td>{{ "stored (fingerprint only)" if vendor.has_bank_fingerprint else "—" }}</td></tr>
+</tbody></table>
+<p class="muted-txt">Bank details are stored as fingerprints only; raw bank fields are never persisted.</p>
+{% endblock %}

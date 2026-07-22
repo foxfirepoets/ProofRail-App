@@ -1,0 +1,76 @@
+# ── Secrets (NEVER commit) ───────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.env
+secrets/
+keys/
+*.key
+*.pem
+*.pfx
+*.p12
+aivs_ed25519*
+.qwc                       # QuickBooks Web Connector config (contains creds/GUIDs)
+*credential*.json
+.credentials.json
+
+# ── Python ───────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.venv*/
+venv/
+env/
+.eggs/
+*.egg-info/
+build/
+dist/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ── Node (proof-core sidecar / tooling) ──────────────────────────
+node_modules/
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
+
+# ── Databases / migrations local artifacts ───────────────────────
+*.sqlite
+*.sqlite3
+*.db
+
+# ── ralph runtime state (keep specs/prompts/guardrails; ignore logs) ─
+ai-accounting-hub-ralph/.ralph/activity.log
+ai-accounting-hub-ralph/.ralph/errors.log
+ai-accounting-hub-ralph/.ralph/context-log.md
+ai-accounting-hub-ralph/.ralph/.iteration
+ai-accounting-hub-ralph/IMPLEMENTATION_PLAN.md
+
+# ── OCR / runtime artifacts ──────────────────────────────────────
+downloads/
+proofs/
+*.pdf.tmp
+
+# ── OS / editor ──────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*~
+
+# ── Office / temp lock files ─────────────────────────────────────
+~$*
+*.tmp
+*.bak
+
+# ── Agent/tooling caches (not project code) ──────────────────────
+.claude/
+.agents/cache/

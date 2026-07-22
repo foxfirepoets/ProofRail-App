@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ company.legal_name }}{% endblock %}
+{% block body %}
+<h1>{{ company.legal_name }}</h1>
+<p class="muted-txt">Role: {{ company.role or "—" }} · Type: {{ company.entity_type }}
+   · QB file: {{ company.qb_file_id or "—" }} · expense dev fee: {{ company.expense_dev_fee }}</p>
+
+<h2>Vendors ({{ vendors|length }})</h2>
+<table><thead><tr><th>Name</th><th>QB ListID</th><th>SwarmScore</th></tr></thead><tbody>
+{% for v in vendors %}<tr><td><a href="/ui/vendors/{{ v.id }}">{{ v.name }}</a></td>
+  <td>{{ v.qb_list_id or "—" }}</td><td>{{ v.swarmscore if v.swarmscore is not none else "—" }}</td></tr>
+{% else %}<tr><td colspan="3" class="muted-txt">None.</td></tr>{% endfor %}</tbody></table>
+
+<h2>Bills ({{ bills|length }})</h2>
+<table><thead><tr><th>Amount</th><th>Status</th><th>PO</th><th>QB TxnID</th></tr></thead><tbody>
+{% for b in bills %}<tr><td><a href="/ui/bills/{{ b.id }}">{{ b.amount }}</a></td>
+  <td>{{ b.status }}</td><td>{{ b.po_ref or "—" }}</td><td>{{ b.qb_txn_id or "— (not posted)" }}</td></tr>
+{% else %}<tr><td colspan="4" class="muted-txt">None.</td></tr>{% endfor %}</tbody></table>
+
+<h2>Draw Packages ({{ draws|length }})</h2>
+<table><thead><tr><th>Draw #</th><th>Project</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>
+{% for d in draws %}<tr><td><a href="/ui/draws/{{ d.id }}">{{ d.draw_number }}</a></td>
+  <td>{{ d.project }}</td><td>{{ d.package_total }}</td><td>{{ d.status }}</td>
+  <td>{% if d.historical %}<span class="pill hist">historical / not-for-posting</span>{% endif %}</td></tr>
+{% else %}<tr><td colspan="5" class="muted-txt">None.</td></tr>{% endfor %}</tbody></table>
+
+<h2>Unresolved vendor candidates ({{ candidates|length }})</h2>
+<table><thead><tr><th>Name</th><th>Source</th></tr></thead><tbody>
+{% for vc in candidates %}<tr><td>{{ vc.name }}</td><td>{{ vc.source_ref or "—" }}</td></tr>
+{% else %}<tr><td colspan="2" class="muted-txt">None queued.</td></tr>{% endfor %}</tbody></table>
+{% endblock %}

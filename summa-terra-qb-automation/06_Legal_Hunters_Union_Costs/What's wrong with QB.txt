@@ -1,0 +1,106 @@
+1. QuickBooks is ~4 months behind (that's the whole catch-up project) — so QB right now is not a reliable source of
+  what's actually been paid in 2026.
+  2. The figures so far come from the construction document folders — pay applications, draw packages, and tracking
+  spreadsheets. Those are a mix: some reflect actual payments (proof-of-payment files, executed lien releases, and a
+  sheet literally titled "how much we paid Rich Development"), but pay apps themselves are amounts requested/invoiced,
+  which is not the same as cash paid.
+
+  So treat what follows as a first pass from project records, with paid-vs-invoiced labeled — not gospel from the books.
+  Let me pull the actual figures from the manifest and summary docs.
+
+  Read 1 file (ctrl+o to expand)
+
+● I've got the figures from the assembled documents. Here's the first pass — written so you can see exactly what's solid
+  and what isn't.
+
+  ⚠️ The paid-vs-invoiced answer (critical)
+
+  To be crystal clear, because it matters for the lawyers: these numbers are NOT from QuickBooks, and the Makers Line
+  figures are what they BILLED, not confirmed cash paid. The one number that is explicitly "paid" is Rich Development
+  ($13.48M), because it comes from a sheet your construction president (Zach Coverston) titled "how much we paid Rich
+  Development." Everything sourced from pay apps = requested/billed.
+
+  "What we paid Makers Line" — Hunters Landing (FIRST PASS)
+
+  Summing the Makers Line pay applications (amount embedded in each signed pay-app PDF):
+
+  ┌────────────────────────────────────────────────────────────────┬─────────────────┐
+  │                                                                │                 │
+  ├────────────────────────────────────────────────────────────────┼─────────────────┤
+  │ Pay Apps #1–#13 (billed)                                       │ $13,626,922.82  │
+  ├────────────────────────────────────────────────────────────────┼─────────────────┤
+  │ + Pay App #14 (draft "R1", may be unpaid — ML was being fired) │ $816,151.82     │
+  ├────────────────────────────────────────────────────────────────┼─────────────────┤
+  │ Total billed #1–#14                                            │ ~$14,443,074.64 │
+  └────────────────────────────────────────────────────────────────┴─────────────────┘
+
+  Heavy caveats — this is a billed figure, and actual cash paid is almost certainly lower:
+  - Retainage (typically 5–10% held back) was likely withheld → ~$0.7M–$1.4M not yet paid.
+  - ML was fired mid-stream, so the final pay app(s) (#13 final was cut to $152K from ~$460K drafts; #14 is a draft) may
+  have been partially or never paid.
+  - Pay apps can be periodic vs. cumulative — I read these as periodic (the amounts rise and fall month to month), but
+  that should be confirmed.
+
+  Union Walk: there is no Makers Line contract or pay history in these files at all — that's a real gap; it must come
+  from QB or the original contract.
+
+  "Extra cost caused by Makers Line's bad materials" (FIRST PASS)
+
+  Hunters Landing — the rebuild scope is the headline:
+  - Exterior rebuild "budget to fix" (because of ML's incorrect materials): ~$2.24M billed / ~$2.69M scheduled
+  - "Out of scope / done under ML" items: ~$704K (insurance $105K, electrical $78K, plumbing redo $88K, cracked-tub
+  replacement $35K, etc.)
+  - Less insurance recovery: ~$105K
+  - → Order of ~$2.8M–$2.9M, plus an unrolled-up pile of "sub invoices received after ML"
+
+  Union Walk — the clearly ML-attributable change orders:
+  - Wrong-sized sewer line (ML): $104,291.12
+  - Window replacement (demolition damage): $171,608.58
+  - Less plumbing-supply credit from ML: −$28,086.64
+  - → ~$248K clearly ML, up to ~$392K if you include the excavation/fill. (I excluded the footings/shear-wall items —
+  those are flagged as the designer's miss, not ML's.)
+
+  Combined rough first pass of ML-caused extra cost: ~$3.0M–$3.3M — dominated by the Hunters Landing exterior rebuild.
+
+  Let me save this as a document in the legal folder so you can hand it over with the caveats attached.
+
+● Write(06_Legal_Hunters_Union_Costs\_FIRST_PASS_Makers_Line_cost_estimate.md)
+  ⎿  Wrote 78 lines to 06_Legal_Hunters_Union_Costs\_FIRST_PASS_Makers_Line_cost_estimate.md
+       2 # FIRST PASS — "What we paid Makers Line" & "Extra cost from Makers Line's bad materials"
+         ks.repared:** 2026-06-25 · **Status:** FIRST PASS / management estimate — NOT audited, NOT from QuickBoo
+       5 > ⚠️ **SOURCE & RELIABILITY — READ FIRST.**
+         , budget-tracking spreadsheets, change-order logs, and a payment-tracking sheet). They are **NOT pulled
+         from QuickBooks**, which is currently ~4 months behind. Makers Line figures are amounts **BILLED (reques
+         e and by pay apps left unpaid when ML was terminated. The only figure here labeled as truly "paid" is th
+         ritative "amount actually paid to Makers Line," pull the vendor payment history for "Makers Line" from Q
+       7 uickBooks (via QODBC) or from bank records.**
+       9 ---
+      10 ## 1. WHAT WE PAID MAKERS LINE (Hunters Landing) — billed, not con
+     … +86 lines (ctrl+o to expand)
+
+● Saved as _FIRST_PASS_Makers_Line_cost_estimate.md in the legal folder, with all the caveats baked in so it can't be
+  misread as confirmed.
+
+  Bottom line
+
+  ┌───────────────────────────┬──────────────────────────────────┬──────────────────────────────────────────────────┐
+  │                           │        First-pass figure         │                      Status                      │
+  ├───────────────────────────┼──────────────────────────────────┼──────────────────────────────────────────────────┤
+  │ Paid to Makers Line       │ ~$13.6M billed (#1–#13), ~$14.4M │ BILLED, not confirmed paid — actual paid is      │
+  │ (Hunters Landing)         │  incl. #14 draft                 │ lower (retainage + unpaid final apps)            │
+  ├───────────────────────────┼──────────────────────────────────┼──────────────────────────────────────────────────┤
+  │ Paid to Rich Development  │ $13,482,056.76                   │ Confirmed "paid" per Zach's sheet                │
+  │ (to finish)               │                                  │                                                  │
+  ├───────────────────────────┼──────────────────────────────────┼──────────────────────────────────────────────────┤
+  │ Extra cost from ML's bad  │ ~$3.0M–$3.3M                     │ First-pass build-up; components solid, total     │
+  │ materials                 │                                  │ needs confirming                                 │
+  ├───────────────────────────┼──────────────────────────────────┼──────────────────────────────────────────────────┤
+  │ Makers Line — Union Walk  │ —                                │ Not in the documents at all (gap)                │
+  └───────────────────────────┴──────────────────────────────────┴──────────────────────────────────────────────────┘
+
+  To make these actual QuickBooks-paid numbers
+
+  The clean way to answer "what we actually paid Makers Line" is a QuickBooks vendor payment report — a Transaction List
+  by Vendor for "Makers Line" and "Rich Development" across the entity files, which shows checks actually cut (not
+  billed). That comes via a QODBC export off the VPS. I can't log into the VPS myself, so that's a quick pull you'd run
+  (or walk me through), and then I replace the billed estimate with confirmed cash-paid.

@@ -1,0 +1,4 @@
+"Item Name","Type","Description","Account","Default Class"
+"FEE-DEV-INC","SERV","Developer Fee Income 5% - parent","Developer Fee Income","90 Parent Overhead"
+"FEE-CEO","SERV","CEO Commission 2% - Mike Watson - parent only","CEO Commission Expense (2%)","90 Parent Overhead"
+"FEE-PRES","SERV","President Commission 1% - Porter Christensen - parent only","Pres Commission Expense (1%)","90 Parent Overhead"

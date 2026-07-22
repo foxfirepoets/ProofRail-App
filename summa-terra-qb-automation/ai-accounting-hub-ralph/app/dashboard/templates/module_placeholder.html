@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ m.title }}{% endblock %}
+{% block body %}
+<h1>{{ m.title }} <span class="pill warn">PENDING</span></h1>
+<p class="muted-txt">{{ m.description }}</p>
+<div class="msg">Module pending — this work queue is not yet wired to the canonical store.
+  No QuickBooks write-back, no BillAdd, no payment execution.</div>
+{% if related %}
+  <p>Related read-only data is available now: <a href="{{ related }}">{{ related }}</a>.</p>
+{% endif %}
+<table>
+  <thead><tr>{% for col in m.columns %}<th>{{ col }}</th>{% endfor %}</tr></thead>
+  <tbody>
+    <tr><td colspan="{{ m.columns|length }}" class="muted-txt">
+      No items — this module is queued for a future build phase.
+    </td></tr>
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ m.title }}{% endblock %}
+{% block body %}
+<h1>{{ m.title }}</h1>
+<p class="muted-txt">{{ m.description }} Intake runs duplicate detection, missing-coding checks,
+{% if bank_module %}and a bank-change fingerprint warning (SHA-256 only — raw bank details are
+never stored), {% endif %}then queues each item for review. Approve / reject / needs-info change
+canonical status only — <strong>no QuickBooks write-back, no BillAdd, no payment.</strong></p>
+
+<h2>Work queue <span class="muted-txt">({{ open_count }} to review)</span></h2>
+<table>
+  <thead><tr>
+    <th>Title</th><th>Reference</th><th>Counterparty</th><th>Amount</th><th>Date</th>
+    <th>Coding</th><th>Exceptions / Warnings</th><th>Status</th>
+  </tr></thead>
+  <tbody>
+  {% for it in items %}
+    <tr>
+      <td><a href="/ui/m/{{ m.key }}/{{ it.id }}">{{ it.title }}</a></td>
+      <td>{{ it.reference or "—" }}</td>
+      <td>{{ it.counterparty or "—" }}</td>
+      <td>{{ it.amount if it.amount is not none else "—" }}</td>
+      <td>{{ it.txn_date or "—" }}</td>
+      <td>{% if it.missing_coding %}<span class="pill warn">missing {{ it.missing_coding | join(", ") }}</span>
+          {% else %}<span class="pill ok">coded</span>{% endif %}</td>
+      <td>
+        {% for e in it.exceptions %}<span class="pill warn">{{ e }}</span> {% endfor %}
+        {% for w in it.warnings %}<span class="pill hist">{{ w }}</span> {% endfor %}
+        {% if not it.exceptions and not it.warnings %}<span class="muted-txt">none</span>{% endif %}
+      </td>
+      <td>{{ it.status }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="8" class="muted-txt">No items yet. Intake one below.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>Intake an item</h2>
+<form method="post" action="/ui/m/{{ m.key }}/intake">
+  <table>
+    <tr><th>Company</th><td>
+      <select name="company_id" required>
+        {% for c in companies %}<option value="{{ c.id }}">{{ c.legal_name }}</option>{% endfor %}
+      </select></td></tr>
+    <tr><th>Title</th><td><input name="title" required placeholder="short description"></td></tr>
+    <tr><th>Reference</th><td><input name="reference" placeholder="invoice / txn ref (duplicate key)"></td></tr>
+    <tr><th>Counterparty</th><td><input name="counterparty" placeholder="payee / payer / entity"></td></tr>
+    <tr><th>Amount</th><td><input name="amount" value="0.00"></td></tr>
+    <tr><th>Date</th><td><input name="txn_date" placeholder="YYYY-MM-DD (optional)"></td></tr>
+    <tr><th>Customer:Job</th><td><input name="customer_job" placeholder="project / job"></td></tr>
+    <tr><th>Class</th><td><input name="class_ref" placeholder="phase / class"></td></tr>
+    <tr><th>Item / cost code</th><td><input name="item_cost_code" placeholder="item or cost code"></td></tr>
+    {% if bank_module %}
+    <tr><th>Bank details</th><td><input name="bank_detail" placeholder="acct/routing (fingerprinted, never stored raw)"></td></tr>
+    {% endif %}
+  </table>
+  <button type="submit">Intake item</button>
+  <span class="muted-txt">Canonical status only — no QB write.</span>
+</form>
+{% endblock %}

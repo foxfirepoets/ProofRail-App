@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<QBWCXML>
+	<AppName>STV Sandbox Integration</AppName>
+	<AppID></AppID>
+	<AppURL>https://ai-accounting-hub-production.up.railway.app/qbwc</AppURL>
+	<AppDescription>Sandbox-only QBWC app. Targets the Summa Terra SANDBOX company file exclusively. Must never be pointed at any production company file.</AppDescription>
+	<AppSupport>mailto:stone@summaterraventures.com</AppSupport>
+	<UserName>stv_sandbox_qbwc</UserName>
+	<OwnerID>{dc6bc214-5f52-447b-84e7-bf741f57f738}</OwnerID>
+	<FileID>{6ca052fa-84fa-4fa9-b42a-604d06e92fad}</FileID>
+	<QBType>QBFS</QBType>
+	<Scheduler>
+		<RunEveryNMinutes>15</RunEveryNMinutes>
+	</Scheduler>
+	<IsReadOnly>false</IsReadOnly>
+</QBWCXML>

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Approval Queue{% endblock %}
+{% block body %}
+
+<style>
+  .approve-back { font-size: 12px; color: #6a7080; text-decoration: none; display: inline-block; margin-bottom: 10px; }
+  .approve-back:hover { color: #15233b; }
+  .approve-subtitle { color: #6a7080; font-size: 13px; margin: 0 0 16px; }
+  .approve-form-wrap { display: flex; flex-direction: column; gap: 6px; min-width: 200px; }
+  .approve-form-wrap textarea {
+    width: 100%; min-height: 52px; font-size: 12px; padding: 6px 8px;
+    border: 1px solid #d1d5db; border-radius: 4px; font-family: inherit;
+    resize: vertical;
+  }
+  .approve-form-wrap textarea:invalid { border-color: #c0392b; }
+  .btn-primary {
+    background: #276749; color: #fff; border: none; padding: 7px 14px;
+    border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  .btn-primary:hover { background: #22543d; }
+  .blocked-chip { display: inline-flex; align-items: center; gap: 5px; color: #962020;
+                  font-size: 12px; font-weight: 700; }
+  .flash-ok  { background: #d6f3df; color: #1d6b38; padding: 10px 14px; border-radius: 6px;
+               border: 1px solid #a7e3ba; margin-bottom: 14px; font-size: 13px; }
+  .flash-err { background: #ffe2e2; color: #962020; padding: 10px 14px; border-radius: 6px;
+               border: 1px solid #f3b6b6; margin-bottom: 14px; font-size: 13px; }
+  .badge-ok  { display:inline-block; background:#d6f3df; color:#1d6b38; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
+  .badge-warn { display:inline-block; background:#fff3cd; color:#856404; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
+  .badge-no  { display:inline-block; background:#ffe2e2; color:#962020; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
+  .empty-queue { color: #6a7080; font-style: italic; text-align: center; padding: 32px; }
+</style>
+
+<a href="/ui" class="approve-back">← Back to Work Queue</a>
+<h1>Approval Queue <span class="muted-txt" style="font-size:15px;font-weight:400;">— Pending Human Review</span></h1>
+<p class="approve-subtitle">
+  Bills with Gate 1 proof passed, waiting for manual approval.
+  Approving advances canonical status only — no QuickBooks write-back occurs (G7).
+  Approval requires a written reason (min 10 chars) and is recorded in the audit trail (G4).
+</p>
+
+{% if msg == 'approved' %}
+  <div class="flash-ok">✓ Bill approved — canonical status advanced to <strong>approved</strong>. No QB write has occurred.</div>
+{% elif msg == 'already-approved' %}
+  <div class="flash-ok">ℹ Bill was already approved (idempotent — no change made).</div>
+{% elif msg == 'proof-missing' %}
+  <div class="flash-err">⛔ Approval blocked: no InvoiceProof bundle is linked to this bill. Gate 1 fails closed.</div>
+{% elif msg == 'proof-not-passed' %}
+  <div class="flash-err">⛔ Approval blocked: InvoiceProof bundle has not passed. Gate 1 fails closed — manual triage required.</div>
+{% elif msg == 'bill-not-found' %}
+  <div class="flash-err">⛔ Bill not found for the requested workflow ID.</div>
+{% elif msg == 'bank-risk-blocked' %}
+  <div class="flash-err">⛔ Approval blocked: bank change risk detected (G2). Bill is frozen pending ATEP review.</div>
+{% elif msg == 'note-too-short' %}
+  <div class="flash-err">⛔ Approval reason must be at least 10 characters. Please try again.</div>
+{% endif %}
+
+{% if not bills %}
+  <p class="empty-queue">No verified bills awaiting approval.</p>
+{% else %}
+<table>
+  <thead>
+    <tr>
+      <th>Vendor</th>
+      <th>Amount</th>
+      <th>Project</th>
+      <th>Draft Date</th>
+      <th>Workflow ID</th>
+      <th>Mike Email</th>
+      <th>Proof Status</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for b in bills %}
+    <tr>
+      <td><strong>{{ b.vendor_name or "—" }}</strong></td>
+      <td>${{ "%.2f"|format(b.amount | float) }}</td>
+      <td>{{ b.project_label or "<em style='color:#6a7080'>—</em>" }}</td>
+      <td>{{ b.draft_date_str or "—" }}</td>
+      <td><code style="font-size:11px">{{ (b.workflow_id or "")[:12] }}{% if b.workflow_id and b.workflow_id|length > 12 %}…{% endif %}</code></td>
+      <td>
+        {% if b.mike_email_detected %}
+          <span class="badge-ok">Yes</span>
+        {% else %}
+          <span class="badge-warn">No</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if b.invoiceproof_bundle_id %}
+          <span class="badge-ok">{{ b.proof_status }}</span>
+        {% else %}
+          <span class="badge-warn">{{ b.proof_status }}</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if b.bank_change_risk %}
+          <span class="blocked-chip">⛔ BLOCKED — bank risk (G2)</span>
+        {% elif not b.workflow_id %}
+          <span class="badge-warn">No workflow ID</span>
+        {% else %}
+          <form class="approve-form-wrap" method="post" action="/approve/{{ b.workflow_id }}"
+                onsubmit="return validateApprovalForm(this)">
+            <textarea name="note" minlength="10" required
+                      placeholder="Approval reason (min 10 chars)…"></textarea>
+            <button type="submit" class="btn-primary">Manually Approve</button>
+          </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<script>
+function validateApprovalForm(form) {
+  var note = form.querySelector('textarea[name="note"]');
+  if (!note || note.value.trim().length < 10) {
+    alert('Approval reason must be at least 10 characters.');
+    return false;
+  }
+  return true;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Bills{% endblock %}
+{% block body %}
+<h1>Bills</h1>
+<table><thead><tr><th>Amount</th><th>Status</th><th>PO</th><th>QB TxnID</th><th>Draw</th></tr></thead><tbody>
+{% for b in bills %}<tr><td><a href="/ui/bills/{{ b.id }}">{{ b.amount }}</a></td>
+  <td>{{ b.status }}</td><td>{{ b.po_ref or "—" }}</td>
+  <td>{{ b.qb_txn_id or "— (not posted)" }}</td>
+  <td>{% if b.draw_package_id %}<a href="/ui/draws/{{ b.draw_package_id }}">draw</a>{% else %}—{% endif %}</td></tr>
+{% else %}<tr><td colspan="5" class="muted-txt">No bills synced yet.</td></tr>{% endfor %}</tbody></table>
+{% endblock %}

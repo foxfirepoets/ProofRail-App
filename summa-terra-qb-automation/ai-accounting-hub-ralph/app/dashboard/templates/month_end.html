@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Month-End Close Exceptions{% endblock %}
+{% block body %}
+<h1>Month-End Close Exceptions</h1>
+<p class="muted-txt">Read-only aggregation of every open exception across all sources — draw
+packages, vendor bills, and work-queue items — with a link to each source item. No write-back.</p>
+
+<h2>Open exceptions <span class="muted-txt">({{ rows | length }})</span></h2>
+<table>
+  <thead><tr>
+    <th>Source</th><th>Reference</th><th>Entity</th><th>Exception</th><th>Amount</th><th>Open</th>
+  </tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{{ r.source }}</td>
+      <td><a href="{{ r.link }}">{{ r.reference }}</a></td>
+      <td>{{ r.entity }}</td>
+      <td><span class="pill warn">{{ r.exception }}</span></td>
+      <td>{{ r.amount if r.amount is not none else "—" }}</td>
+      <td><a href="{{ r.link }}">open →</a></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="pill ok">No open close exceptions — clean to close.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

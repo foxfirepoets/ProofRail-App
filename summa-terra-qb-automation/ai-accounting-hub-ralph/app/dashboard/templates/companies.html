@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Companies{% endblock %}
+{% block body %}
+<h1>Companies</h1>
+<table>
+  <thead><tr><th>Company</th><th>Role</th><th>Type</th><th>Vendors</th><th>Bills</th><th>Draws</th></tr></thead>
+  <tbody>
+  {% for c in companies %}
+    <tr>
+      <td><a href="/ui/companies/{{ c.id }}">{{ c.legal_name }}</a></td>
+      <td>{{ c.role or "—" }}</td><td>{{ c.entity_type }}</td>
+      <td>{{ c.vendor_count }}</td><td>{{ c.bill_count }}</td><td>{{ c.draw_count }}</td>
+    </tr>
+  {% else %}<tr><td colspan="6" class="muted-txt">No companies synced yet.</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endblock %}

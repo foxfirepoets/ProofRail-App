@@ -1,5 +1,45 @@
 # CLAUDE.md — ProofRail (read before writing any code)
 
+## ⚠️ Canonical location (read this first)
+
+**The ONLY working copy of this repo is:**
+`C:\Users\Heather Workman\Desktop\Ben Projects\Co-Work QB Summa Terra`
+(GitHub: `foxfirepoets/ProofRail-App`, branch `main`)
+
+As of 2026-07-22, two duplicate local clones were found and retired after verifying (file-by-file
+diff, mtime comparison) that neither had ANY content — committed or uncommitted — not already
+present in the copy above:
+- `D:\Ben Projects\Co-Work QB Summa Terra` → renamed to `D:\Ben Projects\_RETIRED_2026-07-22_Co-Work QB Summa Terra`. Safe to delete once you've spot-checked it yourself; not deleted outright so nothing is lost if the diff missed something.
+- `Desktop\Co-Work QB Summa Terra-desktop` → a small (54-file) incomplete checkout, zero unique
+  content. Rename/delete attempts hit a Windows file lock ("device or resource busy") — something
+  (an open terminal, editor, or indexer) has a handle on it. Close whatever that is, then delete
+  the folder manually; it is not referenced by anything.
+
+**If you ever find a third copy, or these come back:** don't assume they're intentional backups —
+verify with a real diff (`comm -23` on sorted `find` output, or compare mtimes) before touching
+anything, the way this entry was produced, rather than guessing.
+
+## ⚠️ Canonical STV memory now lives in THIS repo
+
+**`MEMORY.md` at this repo's root is the single canonical running memory for ALL Summa Terra
+Ventures (STV) work** — across every Claude session and every project directory, not just this
+one. Moved here 2026-07-22 from `Summa Terra QB Automation\MEMORY.md` (that repo now just holds a
+redirect stub + the archived pre-move history at `MEMORY_ARCHIVED_2026-07-22.md`) so the memory
+log lives with the pipeline code instead of in a separate specs repo. **Read it at the start of
+any STV-related session, append durable findings to its `## SESSION LOG` at the bottom** (same
+format as before — numbered sections, dated entries). This applies regardless of which directory a
+session started in; the global `~/.claude/CLAUDE.md` and the auto-memory redirect files under
+`~/.claude/projects/*/memory/` both point here now.
+
+**Related but NOT the same repo — don't fold the rest in:**
+- `Ben Projects\Summa Terra QB Automation` (GitHub `foxfirepoets/Summa-Terra-QB-Automation`) — still
+  a separate repo for specs/planning/deliverables (`SPEC.md`, `ai-accounting-hub-ralph/`, etc.).
+  Only the running memory log moved out of it; everything else stays there.
+- `Desktop\QBW Migration Workspace` and `Desktop\QB Enterpise Current Files` — real QuickBooks
+  company-file data (`.QBW`/`.QBB`/`.ND`), not code. Never belongs in git (huge binaries,
+  financial data). Referenced BY this repo's scripts (`qbe_com_bridge.ps1` etc.) but lives outside
+  it on purpose.
+
 ## What this is
 Adaptive-clone construction-finance app for STV on QBO, plus the moat Adaptive lacks:
 SwarmSync Invoice-Proof / Verify-API / Audit-Proof at every material action.

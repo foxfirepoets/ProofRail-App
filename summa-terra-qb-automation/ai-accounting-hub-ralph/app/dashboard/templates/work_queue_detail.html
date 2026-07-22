@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ m.title }} — {{ it.reference or it.id[:8] }}{% endblock %}
+{% block body %}
+<p><a href="/ui/m/{{ m.key }}">← {{ m.title }}</a></p>
+<h1>{{ it.title }}</h1>
+
+<table>
+  <tr><th>Module</th><td>{{ m.title }}</td></tr>
+  <tr><th>Reference</th><td>{{ it.reference or "—" }}</td></tr>
+  <tr><th>Counterparty</th><td>{{ it.counterparty or "—" }}</td></tr>
+  <tr><th>Amount</th><td>{{ it.amount if it.amount is not none else "—" }}</td></tr>
+  <tr><th>Date</th><td>{{ it.txn_date or "—" }}</td></tr>
+  <tr><th>Customer:Job</th><td>{{ it.customer_job or "—" }}</td></tr>
+  <tr><th>Class</th><td>{{ it.class_ref or "—" }}</td></tr>
+  <tr><th>Item / cost code</th><td>{{ it.item_cost_code or "—" }}</td></tr>
+  <tr><th>Bank fingerprint</th><td>{{ "on file (SHA-256)" if it.has_bank_fingerprint else "—" }}</td></tr>
+  <tr><th>Status</th><td>{{ it.status }}</td></tr>
+  <tr><th>QuickBooks</th><td>— (not posted — shadow mode)</td></tr>
+</table>
+
+<h2>Exceptions &amp; warnings</h2>
+{% if it.exceptions or it.warnings %}
+  <p>
+  {% for e in it.exceptions %}<span class="pill warn">{{ e }}</span> {% endfor %}
+  {% for w in it.warnings %}<span class="pill hist">{{ w }}</span> {% endfor %}
+  </p>
+  {% if it.missing_coding %}<p class="muted-txt">Missing coding: {{ it.missing_coding | join(", ") }}.</p>{% endif %}
+  {% if it.has_warnings %}<p class="muted-txt">Bank-change warning compares a fingerprint only — raw bank details are never stored.</p>{% endif %}
+{% else %}
+  <p class="muted-txt">No exceptions or warnings.</p>
+{% endif %}
+
+<h2>Actions</h2>
+<div class="actions">
+  <form method="post" action="/ui/m/{{ m.key }}/{{ it.id }}/approve"><button type="submit">Approve for accounting</button></form>
+  <form method="post" action="/ui/m/{{ m.key }}/{{ it.id }}/needs-info"><button type="submit" class="muted">Mark needs info</button></form>
+  <form method="post" action="/ui/m/{{ m.key }}/{{ it.id }}/reject"><button type="submit" class="danger">Reject</button></form>
+</div>
+<p class="muted-txt">Every action changes canonical status only and writes an audit-trail row.
+No QuickBooks write-back, no BillAdd, no payment.</p>
+
+<h2>Audit trail / proof</h2>
+<table>
+  <thead><tr><th>Action</th><th>Actor</th><th>Row hash</th><th>Outputs</th></tr></thead>
+  <tbody>
+  {% for a in it.audit_trail %}
+    <tr><td>{{ a.action_type }}</td><td>{{ a.actor }}</td>
+        <td><code>{{ a.row_hash }}…</code></td>
+        <td class="muted-txt">{{ a.outputs }}</td></tr>
+  {% else %}
+    <tr><td colspan="4" class="muted-txt">No audit rows yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

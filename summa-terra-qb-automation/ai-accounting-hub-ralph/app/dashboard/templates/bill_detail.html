@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Bill {{ bill.id[:8] }}{% endblock %}
+{% block body %}
+<h1>Bill</h1>
+<table><tbody>
+  <tr><th>Amount</th><td>{{ bill.amount }}</td></tr>
+  <tr><th>Net amount due</th><td>{{ bill.net_amount_due or "—" }}</td></tr>
+  <tr><th>Status</th><td>{{ bill.status }}</td></tr>
+  <tr><th>PO ref</th><td>{{ bill.po_ref or "—" }}</td></tr>
+  <tr><th>Vendor</th><td><a href="/ui/vendors/{{ bill.vendor_id }}">{{ bill.vendor_id }}</a></td></tr>
+  <tr><th>Company</th><td><a href="/ui/companies/{{ bill.company_id }}">{{ bill.company_id }}</a></td></tr>
+  <tr><th>QB TxnID</th><td>{{ bill.qb_txn_id or "— not posted to QuickBooks (shadow mode)" }}</td></tr>
+  <tr><th>Draw package</th><td>{% if bill.draw_package_id %}<a href="/ui/draws/{{ bill.draw_package_id }}">{{ bill.draw_package_id }}</a>{% else %}—{% endif %}</td></tr>
+</tbody></table>
+{% endblock %}
