@@ -1,4 +1,5 @@
 import { Buffer } from 'buffer';
+import { randomUUID } from 'crypto';
 import fs from 'fs';
 import os from 'os';
 import * as path from 'path';
@@ -97,6 +98,104 @@ export function renderEmailBody(body: string, bodyType: EmailBodyType | string |
     default:
       return { contentType: 'text/plain', body };
   }
+}
+
+export interface AttachmentInput {
+  /** Display filename, e.g. "invoice.pdf". Never used as a filesystem path. */
+  filename: string;
+  /** File content, base64 or base64url encoded (both accepted). */
+  content_base64: string;
+  /** Defaults to application/octet-stream if omitted. */
+  mime_type?: string;
+}
+
+export interface RawMessageHeaders {
+  to?: string;
+  cc?: string;
+  subject: string;
+  inReplyTo?: string;
+  references?: string;
+}
+
+const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024; // Gmail's own combined-attachment cap
+
+/** Re-encodes base64 or base64url input as standard, padded base64 (RFC 2045). */
+function toStandardBase64(data: string): string {
+  const std = data.replace(/-/g, '+').replace(/_/g, '/');
+  const padding = '='.repeat((4 - (std.length % 4)) % 4);
+  return std + padding;
+}
+
+/** RFC 2045 requires base64 body lines wrapped at 76 chars. */
+function wrapBase64(b64: string): string {
+  const out: string[] = [];
+  for (let i = 0; i < b64.length; i += 76) out.push(b64.slice(i, i + 76));
+  return out.join('\r\n');
+}
+
+/** Header values (filenames, subjects) must not carry CR/LF or bare quotes. */
+function sanitizeHeaderValue(value: string): string {
+  return value.replace(/[\r\n"]/g, '');
+}
+
+/**
+ * Builds a full RFC 2822 message (plain body, optionally multipart/mixed with
+ * attachments) and returns it base64url-encoded, ready for Gmail API's
+ * `raw` field. Caller is responsible for sanitizing `headers` values that
+ * come from outside this module (this function only sanitizes attachment
+ * filenames, which are always caller-supplied).
+ */
+export function buildRawMessage(
+  headers: RawMessageHeaders,
+  body: RenderedEmailBody,
+  attachments?: AttachmentInput[]
+): string {
+  const lines: string[] = [];
+  if (headers.to) lines.push(`To: ${headers.to}`);
+  if (headers.cc) lines.push(`Cc: ${headers.cc}`);
+  if (headers.inReplyTo) lines.push(`In-Reply-To: ${headers.inReplyTo}`);
+  if (headers.references) lines.push(`References: ${headers.references}`);
+  lines.push(`Subject: ${headers.subject}`);
+  lines.push('MIME-Version: 1.0');
+
+  if (!attachments || attachments.length === 0) {
+    lines.push(`Content-Type: ${body.contentType}; charset="UTF-8"`);
+    lines.push('', body.body);
+    return Buffer.from(lines.join('\r\n'), 'utf-8').toString('base64url');
+  }
+
+  let totalBytes = 0;
+  const encoded = attachments.map((att) => {
+    if (!att.filename || !att.content_base64) {
+      throw new Error('Each attachment needs filename and content_base64');
+    }
+    const std = toStandardBase64(att.content_base64);
+    const bytes = Buffer.from(std, 'base64');
+    totalBytes += bytes.length;
+    if (totalBytes > MAX_ATTACHMENT_BYTES) {
+      throw new Error(
+        `Attachments exceed Gmail's 25MB combined limit (got ${(totalBytes / 1024 / 1024).toFixed(1)}MB so far)`
+      );
+    }
+    return { filename: sanitizeHeaderValue(att.filename), mimeType: att.mime_type || 'application/octet-stream', b64: wrapBase64(bytes.toString('base64')) };
+  });
+
+  const boundary = `----=_gmail_mcp_${randomUUID().replace(/-/g, '')}`;
+  lines.push(`Content-Type: multipart/mixed; boundary="${boundary}"`);
+  lines.push('', `--${boundary}`);
+  lines.push(`Content-Type: ${body.contentType}; charset="UTF-8"`);
+  lines.push('', body.body, '');
+
+  for (const att of encoded) {
+    lines.push(`--${boundary}`);
+    lines.push(`Content-Type: ${att.mimeType}; name="${att.filename}"`);
+    lines.push('Content-Transfer-Encoding: base64');
+    lines.push(`Content-Disposition: attachment; filename="${att.filename}"`);
+    lines.push('', att.b64, '');
+  }
+  lines.push(`--${boundary}--`);
+
+  return Buffer.from(lines.join('\r\n'), 'utf-8').toString('base64url');
 }
 
 /**

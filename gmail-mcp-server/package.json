@@ -1,10 +1,9 @@
 {
   "name": "mcp-gmail",
-  "description": "Google Suite server for Model Context Protocol",
-  "version": "1.0.0",
+  "description": "Remote (Streamable HTTP) Gmail + Calendar MCP server for Cowork",
+  "version": "2.0.0",
   "type": "module",
   "bin": {
-    "mcp-gmail": "./dist/server.js",
     "mcp-gmail-authenticate": "./dist/authenticate.js"
   },
   "files": [
@@ -22,19 +21,24 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.6.0",
     "dotenv": "^16.0.0",
+    "express": "^4.22.2",
     "googleapis": "^173.0.0",
     "marked": "^18.0.3",
     "open": "^11.0.0"
   },
   "devDependencies": {
+    "@types/express": "^4.17.25",
     "@types/node": "^20.17.28",
     "ts-node": "^10.9.2",
     "typescript": "^5.0.0"
   },
+  "overrides": {
+    "google-auth-library": "10.5.0"
+  },
   "scripts": {
     "prepublishOnly": "npm run build",
     "build": "tsc",
-    "start": "node --loader ts-node/esm src/server.ts",
+    "start": "node dist/server.js",
     "dev": "node --loader ts-node/esm src/server.ts",
     "authenticate": "node --loader ts-node/esm src/authenticate.ts",
     "test": "npm run build && node --test 'dist/tools/__tests__/**/*.test.js'"

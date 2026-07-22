@@ -2,6 +2,38 @@
 
 A Model Context Protocol server for Google Workspace services. This server provides tools to interact with Gmail and Google Calendar through the MCP protocol.
 
+## Deployment mode (2026-07-22 revival)
+
+This server now runs as a **remote Streamable HTTP MCP server** (`src/server.ts`), deployed to
+Render, specifically so Cowork's "Add custom connector" can reach it — Cowork only accepts a
+remote MCP URL, it cannot spawn a local stdio process. The original stdio-only version (used from
+a local Claude Desktop config) is still in git history if that mode is ever needed again.
+
+**What changed from the original fork:**
+- Transport: `StdioServerTransport` → `StreamableHTTPServerTransport` behind Express, with the
+  same OAuth2 (authorization_code + client_credentials) shim `proofrail-mcp`
+  (`src/api/mcp-server.ts` at the repo root) already uses for Cowork's connector "Connect" button —
+  copied deliberately rather than reinvented.
+- `gmail_create_draft` and `gmail_reply` gained an `attachments` param (base64 files, multipart
+  MIME built in `gmail-helpers.ts#buildRawMessage`) and `gmail_create_draft` gained `send` (parity
+  with `gmail_reply`'s existing send-or-draft toggle).
+- New `gmail_update_draft` tool (Gmail has no partial-field draft update — this rewrites the whole
+  draft body/attachments via `drafts.update`).
+- Credentials and config are env-var-first so nothing secret needs to be committed:
+  - `GMAIL_OAUTH_CLIENT_ID` / `GMAIL_OAUTH_CLIENT_SECRET` (falls back to `.gauth.json` for local dev)
+  - `GMAIL_ACCOUNTS` — comma-separated emails (falls back to `.accounts.json`)
+  - `GMAIL_REFRESH_TOKEN_<SAFE_EMAIL>` per account (see `GAuthService.envVarNameForEmail`), e.g.
+    `GMAIL_REFRESH_TOKEN_STONE_SUMMATERRAVENTURES_COM`. No interactive OAuth flow runs on the
+    deployed server — refresh tokens are obtained once on a machine with a browser and pasted in.
+  - `GMAIL_MCP_KEY` — bearer secret (≥32 chars), doubles as the Cowork OAuth client secret.
+  - `GMAIL_ALLOW_SENDING=true` / `GMAIL_ALLOW_DRAFTS=true` — `gmail_create_draft`/`gmail_reply`
+    aren't even listed by `tools/list` unless one of these is set (see `getTools()`'s filter in
+    `gmail.ts`) — a deliberate default-safe gate from the original fork, kept as-is.
+- `package.json` pins `overrides.google-auth-library` to `10.5.0` — `googleapis@173`'s nested copy
+  and an unpinned top-level copy resolved to different minor versions, which `tsc` treats as
+  incompatible nominal types (private-field structural mismatch) even though they're
+  functionally identical; the override forces a single deduped copy so `npm run build` succeeds.
+
 ## Features
 
 - **Multiple Google Account Support**

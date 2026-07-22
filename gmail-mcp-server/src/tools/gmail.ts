@@ -4,9 +4,23 @@ import { google } from 'googleapis';
 import { USER_ID_ARG } from '../types/tool-handler.js';
 import { Buffer } from 'buffer';
 import fs from 'fs';
-import { decodeBase64Data, formatDraftEntry, renderEmailBody, resolveAttachmentPath } from './gmail-helpers.js';
+import { decodeBase64Data, formatDraftEntry, renderEmailBody, resolveAttachmentPath, buildRawMessage, AttachmentInput } from './gmail-helpers.js';
 
-export { decodeBase64Data, formatDraftEntry, renderEmailBody, resolveAttachmentPath } from './gmail-helpers.js';
+export { decodeBase64Data, formatDraftEntry, renderEmailBody, resolveAttachmentPath, buildRawMessage } from './gmail-helpers.js';
+
+const ATTACHMENTS_SCHEMA = {
+  type: 'array',
+  description: 'Optional files to attach. Combined size capped at Gmail\'s 25MB limit.',
+  items: {
+    type: 'object',
+    properties: {
+      filename: { type: 'string', description: 'Display filename, e.g. "invoice.pdf".' },
+      content_base64: { type: 'string', description: 'File content, base64 or base64url encoded.' },
+      mime_type: { type: 'string', description: 'Defaults to application/octet-stream if omitted.' }
+    },
+    required: ['filename', 'content_base64']
+  }
+} as const;
 
 export class GmailTools {
   private gmail: ReturnType<typeof google.gmail>;
@@ -216,9 +230,62 @@ export class GmailTools {
               enum: ['plain', 'html', 'markdown'],
               default: 'plain',
               description: 'How to interpret `body`. "plain" sends as text/plain (default, current behavior). "html" sends the body verbatim as text/html. "markdown" renders the body to HTML and sends as text/html.'
+            },
+            attachments: ATTACHMENTS_SCHEMA,
+            send: {
+              type: 'boolean',
+              default: false,
+              description: 'If true, sends the message immediately instead of saving a draft. Only takes effect when the server has sending enabled.'
             }
           },
           required: ['to', 'subject', 'body', USER_ID_ARG]
+        }
+      },
+      {
+        name: 'gmail_update_draft',
+        description: `Replaces the recipient, subject, body, and attachments of an existing Gmail draft. Gmail has no partial-field update - this rewrites the entire draft content.
+
+        Use gmail_list_drafts first to get the draft_id.`,
+        inputSchema: {
+          type: 'object',
+          properties: {
+            [USER_ID_ARG]: {
+              type: 'string',
+              description: 'Email address of the user'
+            },
+            draft_id: {
+              type: 'string',
+              description: 'The ID of the draft to update (from gmail_list_drafts)'
+            },
+            to: {
+              oneOf: [
+                { type: 'string' },
+                { type: 'array', items: { type: 'string' } }
+              ],
+              description: 'Email address of the recipient, or list of email addresses'
+            },
+            subject: {
+              type: 'string',
+              description: 'Subject line of the email'
+            },
+            body: {
+              type: 'string',
+              description: 'Body content of the email'
+            },
+            cc: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Optional list of email addresses to CC'
+            },
+            body_type: {
+              type: 'string',
+              enum: ['plain', 'html', 'markdown'],
+              default: 'plain',
+              description: 'How to interpret `body`.'
+            },
+            attachments: ATTACHMENTS_SCHEMA
+          },
+          required: ['draft_id', 'to', 'subject', 'body', USER_ID_ARG]
         }
       },
       {
@@ -307,7 +374,8 @@ export class GmailTools {
               enum: ['plain', 'html', 'markdown'],
               default: 'plain',
               description: 'How to interpret `reply_body`. "plain" sends as text/plain (default, current behavior). "html" sends the body verbatim as text/html. "markdown" renders the body to HTML and sends as text/html.'
-            }
+            },
+            attachments: ATTACHMENTS_SCHEMA
           },
           required: ['original_message_id', 'reply_body', USER_ID_ARG]
         }
@@ -438,6 +506,8 @@ export class GmailTools {
         return this.bulkGetEmails(args);
       case 'gmail_create_draft':
         return this.createDraft(args);
+      case 'gmail_update_draft':
+        return this.updateDraft(args);
       case 'gmail_delete_draft':
         return this.deleteDraft(args);
       case 'gmail_list_drafts':
@@ -677,6 +747,8 @@ export class GmailTools {
     const subject = args.subject;
     const body = args.body;
     const cc = args.cc || [];
+    const attachments = args.attachments as AttachmentInput[] | undefined;
+    const send = (process.env.GMAIL_ALLOW_SENDING === 'true') ? (args.send || false) : false;
 
     if (!userId) {
       throw new Error(`Missing required argument: ${USER_ID_ARG}`);
@@ -693,22 +765,24 @@ export class GmailTools {
 
     try {
       const rendered = renderEmailBody(body, args.body_type);
-      const message = {
-        raw: Buffer.from(
-          `To: ${this.sanitizeHeader(to)}\r\n` +
-          `Subject: ${this.sanitizeHeader(subject)}\r\n` +
-          `Cc: ${cc.map((c: string) => this.sanitizeHeader(c)).join(', ')}\r\n` +
-          `Content-Type: ${rendered.contentType}; charset="UTF-8"\r\n` +
-          `\r\n` +
-          `${rendered.body}`
-        ).toString('base64url')
-      };
+      const raw = buildRawMessage(
+        {
+          to: this.sanitizeHeader(to),
+          cc: cc.length ? cc.map((c: string) => this.sanitizeHeader(c)).join(', ') : undefined,
+          subject: this.sanitizeHeader(subject)
+        },
+        rendered,
+        attachments
+      );
+
+      if (send) {
+        const sent = await this.gmail.users.messages.send({ userId, requestBody: { raw } });
+        return [{ type: 'text', text: JSON.stringify({ sent: true, ...sent.data }, null, 2) }];
+      }
 
       const draft = await this.gmail.users.drafts.create({
         userId,
-        requestBody: {
-          message
-        }
+        requestBody: { message: { raw } }
       });
 
       return [{
@@ -717,6 +791,58 @@ export class GmailTools {
       }];
     } catch (error) {
       console.error('Error creating draft:', error);
+      throw error;
+    }
+  }
+
+  private async updateDraft(args: Record<string, any>): Promise<Array<TextContent>> {
+    const userId = args[USER_ID_ARG];
+    const draftId = args.draft_id;
+    const to = Array.isArray(args.to) ? args.to.join(', ') : args.to;
+    const subject = args.subject;
+    const body = args.body;
+    const cc = args.cc || [];
+    const attachments = args.attachments as AttachmentInput[] | undefined;
+
+    if (!userId) {
+      throw new Error(`Missing required argument: ${USER_ID_ARG}`);
+    }
+    if (!draftId) {
+      throw new Error('Missing required argument: draft_id');
+    }
+    if (!to) {
+      throw new Error('Missing required argument: to');
+    }
+    if (!subject) {
+      throw new Error('Missing required argument: subject');
+    }
+    if (!body) {
+      throw new Error('Missing required argument: body');
+    }
+
+    try {
+      const rendered = renderEmailBody(body, args.body_type);
+      const raw = buildRawMessage(
+        {
+          to: this.sanitizeHeader(to),
+          cc: cc.length ? cc.map((c: string) => this.sanitizeHeader(c)).join(', ') : undefined,
+          subject: this.sanitizeHeader(subject)
+        },
+        rendered,
+        attachments
+      );
+
+      // drafts.update replaces the ENTIRE draft (Gmail has no partial-field
+      // update for the message content) - this is a full re-send of the body.
+      const draft = await this.gmail.users.drafts.update({
+        userId,
+        id: draftId,
+        requestBody: { message: { raw } }
+      });
+
+      return [{ type: 'text', text: JSON.stringify(draft.data, null, 2) }];
+    } catch (error) {
+      console.error('Error updating draft:', error);
       throw error;
     }
   }
@@ -840,38 +966,29 @@ export class GmailTools {
       }
 
       const rendered = renderEmailBody(replyBody, args.body_type);
-      const message = {
-        raw: Buffer.from(
-          `In-Reply-To: ${this.sanitizeHeader(originalMessageId)}\r\n` +
-          `References: ${this.sanitizeHeader(originalMessageId)}\r\n` +
-          `Subject: Re: ${this.sanitizeHeader(headers.subject || '')}\r\n` +
-          `To: ${this.sanitizeHeader(headers.from || '')}\r\n` +
-          `Cc: ${cc.map((c: string) => this.sanitizeHeader(c)).join(', ')}\r\n` +
-          `Content-Type: ${rendered.contentType}; charset="UTF-8"\r\n` +
-          `\r\n` +
-          `${rendered.body}`
-        ).toString('base64url'),
-        threadId: threadId
-      };
+      const attachments = args.attachments as AttachmentInput[] | undefined;
+      const raw = buildRawMessage(
+        {
+          to: this.sanitizeHeader(headers.from || ''),
+          cc: cc.length ? cc.map((c: string) => this.sanitizeHeader(c)).join(', ') : undefined,
+          subject: `Re: ${this.sanitizeHeader(headers.subject || '')}`,
+          inReplyTo: this.sanitizeHeader(originalMessageId),
+          references: this.sanitizeHeader(originalMessageId)
+        },
+        rendered,
+        attachments
+      );
 
       if (send) {
-        await this.gmail.users.messages.send({
+        const sent = await this.gmail.users.messages.send({
           userId,
-          requestBody: {
-            raw: message.raw,
-            threadId: message.threadId
-          }
+          requestBody: { raw, threadId }
         });
-        return [{
-          type: 'text',
-          text: 'Reply sent successfully'
-        }];
+        return [{ type: 'text', text: JSON.stringify({ sent: true, ...sent.data }, null, 2) }];
       } else {
         const draft = await this.gmail.users.drafts.create({
           userId,
-          requestBody: {
-            message
-          }
+          requestBody: { message: { raw, threadId } }
         });
         return [{
           type: 'text',

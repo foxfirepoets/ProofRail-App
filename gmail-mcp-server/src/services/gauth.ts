@@ -64,6 +64,16 @@ export class GAuthService {
   }
 
   async initialize(): Promise<void> {
+    // Headless deploys (Render) can't ship .gauth.json (gitignored, holds a
+    // client_secret) - GMAIL_OAUTH_CLIENT_ID/SECRET env vars take priority.
+    // Local dev keeps working off the file with no env vars set.
+    const envClientId = process.env.GMAIL_OAUTH_CLIENT_ID;
+    const envClientSecret = process.env.GMAIL_OAUTH_CLIENT_SECRET;
+    if (envClientId && envClientSecret) {
+      this.oauth2Client = new google.auth.OAuth2(envClientId, envClientSecret, REDIRECT_URI);
+      return;
+    }
+
     try {
       const gauthPath = path.resolve(process.cwd(), this.config.gauthFile);
       const gauthData = await fs.readFile(gauthPath, 'utf8');
@@ -91,6 +101,14 @@ export class GAuthService {
     return this.oauth2Client;
   }
 
+  /** GMAIL_REFRESH_TOKEN_<SAFE_EMAIL> - e.g. stone@summaterraventures.com ->
+   *  GMAIL_REFRESH_TOKEN_STONE_SUMMATERRAVENTURES_COM. Lets a headless deploy
+   *  (no local disk, no interactive browser) provision known accounts via env
+   *  vars instead of the local `.oauth2.<email>.json` file flow below. */
+  static envVarNameForEmail(email: string): string {
+    return `GMAIL_REFRESH_TOKEN_${email.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`;
+  }
+
   private getCredentialFilename(userId: string): string {
     const credPath = path.resolve(this.config.credentialsDir, `.oauth2.${userId}.json`);
     const credDir = path.resolve(this.config.credentialsDir);
@@ -101,11 +119,21 @@ export class GAuthService {
   }
 
   async getAccountInfo(): Promise<AccountInfo[]> {
+    // GMAIL_ACCOUNTS="a@x.com,b@y.com" lets a headless deploy skip shipping
+    // .accounts.json entirely. Takes priority when set; falls back to the
+    // file for local dev (where .accounts.json already exists and is more
+    // convenient to hand-edit than an env var).
+    const envAccounts = process.env.GMAIL_ACCOUNTS;
+    if (envAccounts) {
+      return envAccounts.split(',').map((s) => s.trim()).filter(Boolean)
+        .map((email) => new AccountInfoImpl(email, 'workspace', ''));
+    }
+
     try {
       const accountsPath = path.resolve(process.cwd(), this.config.accountsFile);
       const data = await fs.readFile(accountsPath, 'utf8');
       const { accounts } = JSON.parse(data);
-      
+
       if (!Array.isArray(accounts)) {
         throw new Error('Invalid accounts format in accounts file');
       }
@@ -124,6 +152,12 @@ export class GAuthService {
   async getStoredCredentials(userId: string): Promise<OAuth2Client | null> {
     if (!this.oauth2Client) {
       return null;
+    }
+
+    const envRefreshToken = process.env[GAuthService.envVarNameForEmail(userId)];
+    if (envRefreshToken) {
+      this.oauth2Client.setCredentials({ refresh_token: envRefreshToken });
+      return this.oauth2Client;
     }
 
     try {
