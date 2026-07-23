@@ -2,7 +2,7 @@
 
 > **THIS FILE IS THE SINGLE CANONICAL MEMORY FOR ALL SUMMA TERRA VENTURES (STV) WORK, ACROSS EVERY CLAUDE SESSION AND PROJECT FOLDER** (confirmed by Ben, 2026-07-09). Read it at the start of every session, append to it at the end. It supersedes the old per-project Claude Code auto-memory system at `C:\Users\Heather Workman\.claude\projects\...\memory\` — those folders (junctioned together across the ARIXA, Ben Projects, Ben Projects\Co-Work-QB-Summa-Terra, Ben Projects\Summa-Terra-Gmail-Automation, and bare user-home project folders) now just carry a short pointer back to THIS file, not separate content. If you're in ANY other STV-related project folder (Gmail Automation, ProofRail/Co-Work QB, ARIXA, conduit-halo, etc.), still read this file first — it is not scoped to just the QB-Automation build.
 
-_Last updated: 2026-07-10_
+_Last updated: 2026-07-23_
 
 ---
 
@@ -2253,3 +2253,197 @@ RECON_*.md docs, logs, etc.) that have never been pushed to GitHub. Only commit 
 session's earlier gmail-mcp-server work) is on `origin/main`. Flagged, not committed — needs Ben's
 eyes on what's in those 215 files before a blind `git add`/commit (some may be scratch/local-only by
 design). Recommended next step for whoever picks this up.
+
+
+---
+
+## SESSION LOG — 2026-07-21 → 07-23 — ★★ QBE SDK LIVE POSTING BUILT + PROVEN; first live post IN PROGRESS
+
+> **Full coder handoff for this work:** `docs/CODER_HANDOFF_2026-07-23.md` (read it — it is the resume doc).
+> **NOTE:** some of this session's detail was mistakenly appended to the OLD
+> `Summa Terra QB Automation\MEMORY.md` before Ben pointed to THIS canonical file; this entry consolidates it here.
+
+### ★ TARGET SYSTEM CHANGED — supersedes the "Rightworks VPS" framing at the top of this file
+**QuickBooks Desktop Enterprise 24.0 on THIS LOCAL DESKTOP is now the live system of record** (Ben
+confirmed verbatim 2026-07-22: "the desktop QuickBooks files are the sole live books"). All posting
+goes through the **qbXML SDK**. **QBO is DEFERRED / OUT OF SCOPE** (both realms are sandboxes, 403 on
+production — do not build QBO anything). Live books: `C:\Users\Heather Workman\Desktop\QB Enterpise
+Current Files\` (canonical, one .qbw per entity).
+
+### ★ ENVIRONMENT GOTCHAS (cost hours — heed)
+- **THREE QuickBooks installed**: QuickBooks 2022, QuickBooks 2024 (= **Pro Plus 2024**,
+  `...\Intuit\QuickBooks 2024\QBW.EXE`), and **Enterprise Solutions 24.0**
+  (`...\Intuit\QuickBooks Enterprise Solutions 24.0\QBW.EXE`). The company files are **Enterprise
+  files — open ONLY in Enterprise.** Windows file-association defaults `.qbw` to **Pro Plus 2024**,
+  which throws "you can open this only in Enterprise Solutions." ALWAYS launch Enterprise explicitly.
+  The SDK connects to Enterprise (HostQueryRs = "Enterprise Solutions Retail 24.0").
+- **Error -6123,0 on any COPIED .qbw** = stale `.ND` from the copy origin. Fix: delete `.ND` (+`.DSN`),
+  QB regenerates. **Do NOT delete the `.TLG` mid-upgrade** — it breaks the upgrade into an endless
+  login loop. Bake `.ND`/`.DSN` stripping into any copy step (bit us 3x).
+- **SDK connects to whatever company QB currently has OPEN.** If QB has a different file open than
+  requested → "currently open company file doesn't match requested." QB SDK detailed parse errors
+  log to `C:\ProgramData\Intuit\QuickBooks\qbsdklog.txt` — read it for the exact error.
+- Opening a canonical file in 24.0 triggers a **ONE-WAY upgrade** (can't reopen in older/Rightworks
+  QB). QB makes its own .QBB first; plus we take a SHA-256 pre-open backup.
+
+### ★ THE POSTING SERVICE (built, hardened, 35 tests green) — `scripts/`
+`qbe_qbxml.py` (builds **JournalEntryAddRq** — NOT "GeneralJournalEntry"; offline XSD validate);
+`qbe_com_bridge.ps1` (ONLY thing that talks to QB; read-only default, `-Write` switch needs
+`QBE_POST_LIVE=1`+`-IUnderstandThisWrites`; path guard refuses canonical UNLESS the exact path is in
+`$env:QBE_ALLOW_CANONICAL` — the Freeman-only exception we added); `qbe_duplicate_gate.py` (live gate:
+`TransactionQueryRq iterator` full pagination; match amount±$0.005+account+date±5d, prefer false-skip);
+`qbe_account_resolver.py` (NEW — pack short name → QB FullName per entity, fails loud); `qbe_post.py`
+(PostingClient.post_entry pipeline: idempotency → gate → neg-balance halt → verify pre-open backup →
+INTENT log → write → read-back → CONFIRMED log; `prepare_pre_open_backup`/`verify_pre_open_backup`);
+`qbe_post_catchup.py` (driver: `route_pack`, `run_live_batch`, `prepare_backups`/`--prepare-backups`,
+dry-run default); `test_qbe_posting_service.py` (35 tests, golden fixtures from real QB TxnID
+1F3-1784747287); `config/qbe_company_map.json` (per-entity canonical/working paths, cert_granted).
+
+### ★ FIVE BUGS found only by posting to REAL QuickBooks (all FIXED + regression-tested)
+1. Wrong element `GeneralJournalEntryAddRq` → must be `JournalEntryAddRq` (XSD had same wrong name).
+2. Bridge read-only-by-default; `-ReadOnly:$false` breaks through `powershell -File` → bare `-Write`.
+3. Pack account names abbreviated vs QB FullNames → `qbe_account_resolver.py`.
+4. Gate `TransactionQueryRq` rejects `<TxnDateRangeFilter><FromTxnDate>` → iterator pull + pagination.
+5. Backup copied an OPEN .qbw (WinError 32) → pre-open backup + post-time existence verify.
+
+### ★ WHAT'S PROVEN (all real, verified, nothing on live books yet)
+- SDK read: 14 entities (29/29 extractions). SDK write: $1 smoke test (Elephant Rock copy, TxnID
+  1F3-1784747287, read back).
+- **Freeman's 2 real catch-up entries posted + read-back verified on disposable COPIES** (Cincinnati
+  Ins $4,271.00 / SC-Gov permit $2,502.50), both cross-verified against the live Plaid feed as real
+  bank debits. Full automated `run_live_batch` proven on a clean copy: backup→resolver→gate→post→
+  INTENT/CONFIRMED ledger → re-run = SKIPPED_IDEMPOTENT (no double-post).
+
+### ★★ FIRST LIVE POST — IN PROGRESS, blocked only on wrong-file-open (RESUME HERE)
+Ben authorized **FREEMAN ONLY** (verbatim 2026-07-22): "GO LIVE — Freeman Ranch first. I confirm the
+desktop QuickBooks files are the sole live books, I accept the one-way upgrade, and I authorize
+lifting the working-copies guard for Freeman only. Post Freeman's auto-postable entries to the live
+file." Staged: canonical Freeman backed up (SHA `837a737f`), guard exception added + tested (allows
+ONLY the exact path in `QBE_ALLOW_CANONICAL`), map's Freeman `working_copy_path` → canonical, copy-test
+ledger archived (`logs/qbe_posted.copytest-archived.jsonl`). **Stopped because QuickBooks had the
+`_livetest` COPY open, not the canonical file — the SDK correctly refused the mismatch. NOTHING posted
+to any live book; no money moved.** To finish: open the LIVE Freeman in Enterprise 24.0 (one-way
+upgrade, Admin single-user), then run `run_live_batch` scoped to Freeman with `QBE_POST_LIVE=1` +
+`QBE_ALLOW_CANONICAL=<Freeman canonical path>`. Every OTHER entity needs its own Ben approval + cert
+grant + upgrade. **The 142 alone do NOT reconcile any account — held entries are also needed.**
+
+### The 391-entry catch-up pack (buckets sum to 391)
+142 auto-postable READY (dated May-2026 or 2025) · 215 READY-but-held · 17 split-required · 16 uncoded
+(never post; 7 are STDG "Dividends") · 1 correction. Held reasons (overlap): 228 date-exposed Jan-Apr,
+10 reopened-unverified, 3 decision-blocked, 3 unresolved-gap, 1 already-booked. Files in
+`docs/final_issue_resolution/`. **Cutover-vintage blocker:** the QBW extract is April-vintage, so
+"absent from the extract" ≠ "unbooked in live QB" for Jan-Apr items → those are held; the live
+duplicate-gate (queries the real file at post time) is what makes accepting April-vintage safe.
+
+### ★ Corrections to prior beliefs established this session
+- **STVE MACU is TWO REAL accounts, NOT a phantom** (member ****2215 = Share 50 Checking + Share 59
+  Business Sweep; Sweep was live through mid-Mar-2026, now $0). Neither QB nor the statement was wrong;
+  the recon compared a share list to a member number. Consequence: reconcile BOTH registers; one Plaid
+  Item per membership. The MACU checking (Share 50) runs heavy card spend + overdrafts (ended March
+  -$811.19, $325 fees) — flagged to Aubrey.
+- **Granite ****6799 (acct [MEMBER-REDACTED]) is a RESERVE/dividend account, NOT operating** — nothing is paid
+  from it; Granite loan interest is paid from **Union UCCU ****3570**. Do NOT rank it a top Plaid feed.
+  May be ONE account double-booked in STVE+STDG (~$1.1M possibly counted twice) — resolve.
+- **HLN Central Bank was NOT corrected to $0** — still shows Adam 810,297.08 / variance 848,763.20,
+  resolved in no file (largest unresolved pack item). STDG Central Bank $203,985 also unresolved.
+- The named landmines (12SB M10 $500k, RM Texas Camden $80,208.37) are NOT in the 391 pack (excluded
+  upstream). No "12SB" entity in the pack.
+
+### ★ The three live source sheets (Ben: "the most important — DO NOT LOSE") + past-due money
+Bank register `1SSQdz_snum6Q1am_5wR7Muka87HHP-E4_syrfE-50Gw`; bill-pay `1oRD0CFHBGeTtZhkQC9Pfo_
+NLAp3AUqyZ486jPvwQX_o`; Ben's calendar. **Master Payment Control Register** (`docs/ben_first_bridge/
+STV_MASTER_PAYMENT_CONTROL_REGISTER_BEN_FIRST_2026-07-21.xlsx`) is the obligation master (47
+obligations vs 17 in the calendar). Past-due / at-risk as of 2026-07-21: HLN Arixa ~$70,102 past due;
+Freeman Arixa ~$64,990; Kirton McConkie $42,891 (disputed on ALLOCATION); Union Liberty Mutual past
+due; **Rock Creek EB-5 $709,917.81 due 7/31 "wire initiated, clearing unconfirmed"** (biggest single
+item). Union Granite is TWO loans (LN86 ~$18,640.66 + LN87 ~$21,205.74 = ~$39,846/mo). Vic Copa
+CONFIRMED active + autopay (OK). Root cause of the HLN miss: Ben was not on the 5/15 Arixa closing email.
+
+### ★ Plaid — 9 of 10 Items live
+Live: STVE-UCCU, Summa-Elite-UCCU, HLN-UCCU, Madison-UCCU, Union-Walk, 12SB-UCCU, Quincy-UCCU,
+Freeman-UCCU, Vic-UCCU. **STDG-UCCU REMOVED** (`/item/remove`, identity confirmed ins_110916 MM
+$524,723.63) to stay ≤10. **10th = STVE-MACU, blocked on Aubrey's MACU access reset** (phone-on-file
+unknown; Gmail draft to Aubrey is in Ben's Drafts). Ranking was redone by OPERATING usefulness not
+balance (Granite do-not-connect, HLN #1 not the $4.2M Summa Elite). Link server:
+`scripts/plaid_link_server.py` (localhost:8737, production; Ben authenticates in browser; UCCU returns
+NO mask via Plaid → verify by BALANCE match). Vic first linked WRONG account ($281k+MM); removed and
+relinked to the real $254 Vic. Vic is cash-call-funded, no income → overdraft risk before the ~$3,250
+Copa autopay.
+
+### Open design issues to fix before scaling to all 14 (see handoff §9)
+1. Idempotency ledger is global-by-entry-content, not per-file (posting to a copy blocks a later live
+   post — we archived the copy-test ledger to work around it). 2. Automate `.ND`/`.DSN` stripping.
+3. Seed BalanceTracker from `FINAL_OPENING_BALANCES_BY_ENTITY.csv` for large entities. 4. Backup
+   manifest is at `backups/qbe_backup_manifest.jsonl` (an earlier manual one is at `logs/` — use the
+   backups/ one). 5. Union Station Prelim Draw #13 over-requested $273,454.70 — raise w/ Coverston +
+   Granite (Ben's, not CPA).
+
+## SESSION LOG — 2026-07-23 — Duplicate local clone cleanup: one deleted, one still locked
+Re-verified the two duplicate local clones flagged 2026-07-22 (`D:\Ben Projects\_RETIRED_...` and
+`Desktop\Co-Work QB Summa Terra-desktop`) before deleting — their `git status` showed dozens of
+modified/untracked entries that looked alarming at first glance (including `QB Enterpise Current
+Files/` and `QB Migration Working Files/`), which contradicted the prior "verified zero unique
+content" note. Re-ran a full name+size diff against canonical rather than trusting the stale claim:
+- **D: retired copy** — genuinely zero unique content. The only path-level differences (46 files)
+  were the pre-`git mv` copy of `archive/gmail-mcp-server/...` (including OAuth credential files
+  `.gauth.json`, `.oauth2.stone@summaterraventures.com.json`, `.accounts.json`) — all 46 confirmed
+  present at the new `gmail-mcp-server/...` path in canonical. **Deleted.**
+- **Desktop-desktop copy** — also zero unique content (empty diff). Deletion still fails with
+  "device or resource busy" via both `rm -rf` and PowerShell `Remove-Item -Force`; no process shows
+  the path in `Get-Process`/`Get-CimInstance Win32_Process`, so something without a visible command
+  line (indexer, sync client, or an editor/Explorer window with it open) holds a handle. **Not
+  deleted — needs Ben to close whatever has it open, then delete manually.** Content itself is safe
+  to lose; nothing unique.
+- Lesson: don't trust a prior "verified safe" note at face value once real time has passed — a stale
+  git-status snapshot can look like new unique work when it's actually just an old path from before
+  an in-session `git mv`. Re-diff against canonical before any destructive action, every time.
+
+## SESSION LOG — 2026-07-23 (later) — ★★★ FIRST-EVER LIVE POST TO A REAL STV QUICKBOOKS BOOK — DONE, VERIFIED
+Resumed from `docs/CODER_HANDOFF_2026-07-23.md` §0. Confirmed via independent read-only SDK probe
+(not by trusting the handoff) that QuickBooks Enterprise 24.0 had the canonical
+`Freeman Ranch Partners LLC.QBW` open (CompanyQueryRq returned the real company name, SingleUser mode
+— no file mismatch). Ran `run_live_batch` scoped to Freeman with `QBE_POST_LIVE=1` +
+`QBE_ALLOW_CANONICAL=<canonical path>`. **Both entries posted and are now real, live, permanent
+QuickBooks journal entries:**
+- TxnID `51F-1784823923` — 2026-05-01, $2,502.50, SC-Gov permit (debit `Freeman Ranch:Development/
+  Improvement Costs` / credit `UCCU Checking`).
+- TxnID `522-1784823972` — 2026-05-04, $4,271.00, Cincinnati Insurance (same account pair).
+Independently re-verified with a fresh `JournalEntryQueryRq` (not the posting code's own read-back) —
+both entries confirmed balanced, correct amounts/dates/accounts/memos matching real bank descriptions.
+Ledger (`logs/qbe_posted.jsonl`) shows clean INTENT→CONFIRMED for both. **Freeman Ranch Partners LLC
+is now the first STV entity with a real automated posting to its live book.**
+
+### ★ Two things found this session that matter for scaling to the other 13 entities
+1. **★ FIXED same day (bughound investigation) — the QuickBooks "app wants access" certificate dialog
+   re-prompted on every single connection**, even after clicking "Yes, always allow." The bridge opens
+   a brand-new connection per qbXML request (by design), so a 2-entry post opened 4 separate
+   connections (2 ADDs, 2 read-backs) — each a fresh, unrecognized handshake because
+   `scripts/qbe_com_bridge.ps1:130` passed a **blank appID** to `OpenConnection2`, giving QuickBooks no
+   stable identity to key a persisted grant to. **Fix applied:** `qbe_com_bridge.ps1` now passes a
+   fixed GUID (`$stableAppId = "6F3A9E12-8B44-4C1D-9A2E-5D7F1B3C8E60"` — must never change, or
+   QuickBooks treats it as a new app and re-approval starts over for every entity) instead of `""`.
+   Regression test `test_bridge_uses_stable_nonblank_app_id` pins the GUID; 36/36 tests pass. Verified
+   live: the fixed script reconnected cleanly to the real open Freeman file in 4.2s, no dialog.
+   **Confidence Medium, not certain** — two WebFetch attempts to Intuit's own KB timed out, and one
+   third-party SDK example suggests QuickBooks may key the grant by AppName (already constant here)
+   rather than appID, so this may be a contributing-factor fix, not the complete mechanism. **Not yet
+   tested against a fresh WRITE connection** (avoided creating a throwaway live journal entry just to
+   test) — the real proof is the next entity's first live write. If the dialog still loops there, the
+   deeper fix is restructuring the bridge to hold one connection open per batch (matching
+   `qbw_full_extract.ps1`'s proven one-connection-many-queries pattern) instead of one per request.
+2. **A new, previously-unseen SDK log error appeared on every ADD and every read-back today**:
+   `JournalEntryStorage::BuildTheRetObject — This feature is not enabled or not available in this
+   version of QuickBooks. HRESULT=0x80040527`. This is a **benign quirk, not a failure** — it fired on
+   both writes and both read-backs, immediately followed by "completed successfully," and the
+   independent verification query above proved both entries are correct and complete. Likely an
+   optional return-object field QuickBooks Enterprise 24.0 doesn't populate (not the core txn data).
+   Confirm this doesn't get worse before assuming it's always harmless — the SDK log file itself also
+   turned out to be rotated/truncated (only 75 lines, all from today), so historical comparison against
+   the earlier "proven" copy-test posts wasn't possible; if this error becomes a real blocker on a
+   future entity, don't assume benign again without a fresh independent read-back check.
+
+### What's next (unchanged roadmap, see handoff §8)
+The other 141 auto-postable rows across 8 more entities each need their own Ben approval + cert grant
++ one-way upgrade, one entity at a time. **Fix the appID bug first** — doing HLN's 58 entries with a
+re-prompting cert dialog every single connection is not viable. Posting the 142 alone still does not
+reconcile any account — the held set (215 rows) is a separate workstream.
