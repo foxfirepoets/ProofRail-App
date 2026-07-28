@@ -28,7 +28,7 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-import { createHash, randomUUID } from 'crypto';
+import { createHash, createHmac, timingSafeEqual } from 'crypto';
 import express, { NextFunction, Request, Response } from 'express';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
@@ -169,14 +169,54 @@ function buildMcpServer(toolset: Awaited<ReturnType<typeof buildToolset>>): Serv
 const OAUTH_CLIENT_ID = process.env.GMAIL_MCP_OAUTH_CLIENT_ID ?? 'gmail-mcp-cowork';
 const OAUTH_CLIENT_SECRET = MCP_KEY;
 
-interface AuthCode {
+interface AuthCodePayload {
   clientId: string;
   redirectUri: string;
   codeChallenge?: string;
   codeChallengeMethod?: string;
-  expiresAt: number;
+  exp: number;
 }
-const authCodes = new Map<string, AuthCode>();
+
+// Stateless, signed short-lived token for the authorization_code exchange below - same fix as the
+// MCP /mcp transport migration: Render's free-tier idle spin-down/redeploys wipe any in-memory
+// Map, so a code stored server-side (the old approach) fails with invalid_grant if a restart lands
+// between the browser redirect and the follow-up /oauth/token POST. Encoding the payload into an
+// HMAC-signed token instead means there's nothing to lose - verification only needs the token
+// itself plus MCP_KEY, which is always present (the server refuses to start without it).
+//
+// Tradeoff, stated plainly: this drops single-use enforcement (a token is valid for its whole TTL,
+// not just once) in exchange for restart-durability. Low real stakes here - this exchange always
+// ends by issuing the same static MCP_KEY as the access token (see OAUTH_CLIENT_SECRET above), so
+// a replayed code doesn't grant anything beyond what a valid MCP_KEY already grants; TLS protects
+// the token in transit, and this is a single-tenant, single-client server.
+function purposeKey(purpose: string): Buffer {
+  return createHmac('sha256', MCP_KEY!).update(purpose).digest();
+}
+
+function signStatelessToken(purpose: string, payload: Record<string, unknown>, ttlMs: number): string {
+  const body = Buffer.from(JSON.stringify({ ...payload, exp: Date.now() + ttlMs }), 'utf8').toString('base64url');
+  const sig = createHmac('sha256', purposeKey(purpose)).update(body).digest('base64url');
+  return `${body}.${sig}`;
+}
+
+function verifyStatelessToken<T extends { exp: number }>(purpose: string, token: string | undefined): T | undefined {
+  if (!token) return undefined;
+  const dot = token.indexOf('.');
+  if (dot < 0) return undefined;
+  const body = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+  const expectedSig = createHmac('sha256', purposeKey(purpose)).update(body).digest('base64url');
+  const sigBuf = Buffer.from(sig);
+  const expectedBuf = Buffer.from(expectedSig);
+  if (sigBuf.length !== expectedBuf.length || !timingSafeEqual(sigBuf, expectedBuf)) return undefined;
+  try {
+    const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8')) as T;
+    if (typeof payload.exp !== 'number' || payload.exp < Date.now()) return undefined;
+    return payload;
+  } catch {
+    return undefined;
+  }
+}
 
 function baseUrl(req: Request): string {
   const configured = process.env.RENDER_EXTERNAL_URL ?? process.env.PUBLIC_BASE_URL;
@@ -244,14 +284,11 @@ async function main() {
       return;
     }
 
-    const code = randomUUID();
-    authCodes.set(code, {
-      clientId: client_id,
-      redirectUri: redirect_uri,
-      codeChallenge: code_challenge,
-      codeChallengeMethod: code_challenge_method,
-      expiresAt: Date.now() + 5 * 60_000
-    });
+    const code = signStatelessToken(
+      'oauth_code',
+      { clientId: client_id, redirectUri: redirect_uri, codeChallenge: code_challenge, codeChallengeMethod: code_challenge_method },
+      5 * 60_000 // 5 min TTL, verified (not looked up) in /oauth/token below
+    );
 
     const redirect = new URL(redirect_uri);
     redirect.searchParams.set('code', code);
@@ -275,13 +312,11 @@ async function main() {
     }
 
     if (body.grant_type === 'authorization_code') {
-      const code = body.code;
-      const entry = code ? authCodes.get(code) : undefined;
-      if (!entry || entry.expiresAt < Date.now()) {
+      const entry = verifyStatelessToken<AuthCodePayload>('oauth_code', body.code);
+      if (!entry) {
         res.status(400).json({ error: 'invalid_grant' });
         return;
       }
-      authCodes.delete(code!);
 
       if (entry.clientId !== (clientId ?? OAUTH_CLIENT_ID) || (clientId && clientSecret !== OAUTH_CLIENT_SECRET)) {
         res.status(401).json({ error: 'invalid_client' });

@@ -19,7 +19,7 @@
  * section 10 - this file doesn't paper over that; see the README note in this repo for honest status.
  */
 import express, { type NextFunction, type Request, type Response } from "express";
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
@@ -215,14 +215,58 @@ function buildServer(): McpServer {
 const OAUTH_CLIENT_ID = process.env.PROOFRAIL_OAUTH_CLIENT_ID ?? "proofrail-cowork";
 const OAUTH_CLIENT_SECRET = MCP_KEY; // reuse the same secret Cowork puts in "OAuth Client Secret"
 
-interface AuthCode {
+interface AuthCodePayload {
   clientId: string;
   redirectUri: string;
   codeChallenge?: string;
   codeChallengeMethod?: string;
-  expiresAt: number;
+  exp: number;
 }
-const authCodes = new Map<string, AuthCode>();
+
+// Stateless, signed short-lived tokens for the two browser-redirect OAuth flows in this file
+// (Cowork's authorization_code exchange below, and this app's own QBO consent flow further down)
+// - same fix as the MCP /mcp transport migration: Render's free-tier idle spin-down/redeploys
+// wipe any in-memory Map, so a code or state value stored server-side (the old approach) fails
+// with invalid_grant/invalid_state if a restart lands between the browser redirect and its
+// follow-up request. Encoding the payload into an HMAC-signed token instead means there's nothing
+// to lose - verification only needs the token itself plus MCP_KEY, which is always present (the
+// server refuses to start without it). Purpose-scoped signing keys (derived via HMAC below) stop
+// a token issued for one flow from being replayed against the other, even though both derive from
+// the same MCP_KEY.
+//
+// Tradeoff, stated plainly: this drops single-use enforcement (a token is valid for its whole TTL,
+// not just once) in exchange for restart-durability. Low real stakes here - every one of these
+// exchanges ends by issuing the same static MCP_KEY as the access token (see OAUTH_CLIENT_SECRET
+// above), so a replayed code doesn't grant anything beyond what a valid MCP_KEY already grants;
+// TLS protects the token in transit, and this is a single-tenant, single-client server.
+function purposeKey(purpose: string): Buffer {
+  return createHmac("sha256", MCP_KEY!).update(purpose).digest();
+}
+
+function signStatelessToken(purpose: string, payload: Record<string, unknown>, ttlMs: number): string {
+  const body = Buffer.from(JSON.stringify({ ...payload, exp: Date.now() + ttlMs }), "utf8").toString("base64url");
+  const sig = createHmac("sha256", purposeKey(purpose)).update(body).digest("base64url");
+  return `${body}.${sig}`;
+}
+
+function verifyStatelessToken<T extends { exp: number }>(purpose: string, token: string | undefined): T | undefined {
+  if (!token) return undefined;
+  const dot = token.indexOf(".");
+  if (dot < 0) return undefined;
+  const body = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+  const expectedSig = createHmac("sha256", purposeKey(purpose)).update(body).digest("base64url");
+  const sigBuf = Buffer.from(sig);
+  const expectedBuf = Buffer.from(expectedSig);
+  if (sigBuf.length !== expectedBuf.length || !timingSafeEqual(sigBuf, expectedBuf)) return undefined;
+  try {
+    const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as T;
+    if (typeof payload.exp !== "number" || payload.exp < Date.now()) return undefined;
+    return payload;
+  } catch {
+    return undefined;
+  }
+}
 
 function baseUrl(req: Request): string {
   const configured = process.env.RENDER_EXTERNAL_URL ?? process.env.PUBLIC_BASE_URL;
@@ -278,7 +322,7 @@ export function startMcpServer(): void {
   });
 
   // Browser-facing leg of the Authorization Code flow: Cowork's "Connect" button navigates
-  // the user's browser here. Single-tenant auto-approve (see comment above authCodes) -
+  // the user's browser here. Single-tenant auto-approve (see comment above signStatelessToken) -
   // straight to issuing a code and redirecting back, no login/consent form.
   app.get("/authorize", (req, res) => {
     const { response_type, client_id, redirect_uri, state, code_challenge, code_challenge_method } =
@@ -293,14 +337,11 @@ export function startMcpServer(): void {
       return;
     }
 
-    const code = randomUUID();
-    authCodes.set(code, {
-      clientId: client_id,
-      redirectUri: redirect_uri,
-      codeChallenge: code_challenge,
-      codeChallengeMethod: code_challenge_method,
-      expiresAt: Date.now() + 5 * 60_000, // 5 min, single-use, consumed in /oauth/token below
-    });
+    const code = signStatelessToken(
+      "oauth_code",
+      { clientId: client_id, redirectUri: redirect_uri, codeChallenge: code_challenge, codeChallengeMethod: code_challenge_method },
+      5 * 60_000, // 5 min TTL, verified (not looked up) in /oauth/token below
+    );
 
     const redirect = new URL(redirect_uri);
     redirect.searchParams.set("code", code);
@@ -324,13 +365,11 @@ export function startMcpServer(): void {
     }
 
     if (body.grant_type === "authorization_code") {
-      const code = body.code;
-      const entry = code ? authCodes.get(code) : undefined;
-      if (!entry || entry.expiresAt < Date.now()) {
+      const entry = verifyStatelessToken<AuthCodePayload>("oauth_code", body.code);
+      if (!entry) {
         res.status(400).json({ error: "invalid_grant" });
         return;
       }
-      authCodes.delete(code!); // single-use
 
       if (entry.clientId !== (clientId ?? OAUTH_CLIENT_ID) || (clientId && clientSecret !== OAUTH_CLIENT_SECRET)) {
         res.status(401).json({ error: "invalid_client" });
@@ -395,12 +434,11 @@ export function startMcpServer(): void {
     qboTokenStore = undefined;
   }
 
-  interface QboAuthState {
+  interface QboAuthStatePayload {
     realm: QboRealmSlot;
     redirectUri: string;
-    expiresAt: number;
+    exp: number;
   }
-  const qboAuthStates = new Map<string, QboAuthState>();
 
   function qboConfigError(): string | undefined {
     if (!QBO_CLIENT_ID || !QBO_CLIENT_SECRET) {
@@ -433,8 +471,7 @@ export function startMcpServer(): void {
     }
 
     const redirectUri = `${baseUrl(req)}/auth/qbo/callback`;
-    const state = randomBytes(24).toString("hex");
-    qboAuthStates.set(state, { realm, redirectUri, expiresAt: Date.now() + 10 * 60_000 });
+    const state = signStatelessToken("qbo_state", { realm, redirectUri }, 10 * 60_000);
 
     const authorizeUrl = new URL("https://appcenter.intuit.com/connect/oauth2");
     authorizeUrl.searchParams.set("client_id", QBO_CLIENT_ID!);
@@ -460,12 +497,11 @@ export function startMcpServer(): void {
       res.status(400).send(`Intuit returned an error: ${error} - ${error_description ?? "no description"}. Nothing was stored.`);
       return;
     }
-    const entry = state ? qboAuthStates.get(state) : undefined;
-    if (!entry || entry.expiresAt < Date.now()) {
+    const entry = verifyStatelessToken<QboAuthStatePayload>("qbo_state", state);
+    if (!entry) {
       res.status(400).send("invalid_state: this consent flow expired or was never started via /auth/qbo/start. Nothing was stored.");
       return;
     }
-    qboAuthStates.delete(state!); // single-use
     if (!code || !realmId) {
       res.status(400).send("invalid_request: Intuit's callback is missing code or realmId. Nothing was stored.");
       return;
