@@ -248,19 +248,6 @@ function requireBearerAuth(req: Request, res: Response, next: NextFunction): voi
   next();
 }
 
-interface Session {
-  server: McpServer;
-  transport: StreamableHTTPServerTransport;
-}
-
-function isInitializeRequest(body: unknown): boolean {
-  const msg = body as { method?: string } | Array<{ method?: string }>;
-  if (Array.isArray(msg)) {
-    return msg.some((m) => m?.method === "initialize");
-  }
-  return msg?.method === "initialize";
-}
-
 export function startMcpServer(): void {
   const app = express();
   app.use(express.json());
@@ -530,57 +517,36 @@ export function startMcpServer(): void {
     }
   });
 
-  // Streamable HTTP transport, STATEFUL mode: Cowork opens one session (initialize) and then
-  // makes many tools/list + tools/call requests against it, so the transport (and the McpServer
-  // wrapping it) must persist across requests, keyed by the mcp-session-id header the SDK issues
-  // on initialize. This is the reference pattern from the MCP SDK docs for Streamable HTTP.
-  const sessions = new Map<string, Session>();
-
+  // Streamable HTTP transport, STATELESS mode (SDK reference pattern:
+  // examples/server/simpleStatelessStreamableHttp.ts): no session Map. Every POST /mcp builds a
+  // fresh McpServer + transport, handles that one request, and tears down on response close.
+  // Nothing to lose when the process restarts (Render free-tier idle spin-down, redeploys) -
+  // there is no session for a restart to invalidate, so the "no session; first request must be
+  // initialize" failure this replaced can't happen anymore. Safe here because no tool carries
+  // state inside the MCP session itself - it all lives in proofRailService's own repository.
   app.get("/mcp", requireBearerAuth, (_req, res) => {
     res
       .status(405)
-      .set("Allow", "POST, DELETE")
+      .set("Allow", "POST")
       .json({ error: { code: "METHOD_NOT_ALLOWED", message: "Use POST /mcp for Streamable HTTP requests." } });
   });
 
   app.post("/mcp", requireBearerAuth, async (req, res) => {
-    const existingSessionId = req.header("mcp-session-id");
-    let session = existingSessionId ? sessions.get(existingSessionId) : undefined;
-
-    if (!session) {
-      if (!isInitializeRequest(req.body)) {
-        res.status(400).json({
-          jsonrpc: "2.0",
-          error: { code: -32000, message: "Bad Request: no session; first request must be initialize" },
-          id: null,
-        });
-        return;
-      }
-      const server = buildServer();
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => randomUUID(),
-        onsessioninitialized: (sessionId) => {
-          sessions.set(sessionId, { server, transport });
-        },
-      });
-      transport.onclose = () => {
-        if (transport.sessionId) sessions.delete(transport.sessionId);
-      };
-      await server.connect(transport);
-      session = { server, transport };
-    }
-
-    await session.transport.handleRequest(req, res, req.body);
+    const server = buildServer();
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    res.on("close", () => {
+      void transport.close();
+      void server.close();
+    });
+    await server.connect(transport);
+    await transport.handleRequest(req, res, req.body);
   });
 
-  app.delete("/mcp", requireBearerAuth, async (req, res) => {
-    const sessionId = req.header("mcp-session-id");
-    const session = sessionId ? sessions.get(sessionId) : undefined;
-    if (!session) {
-      res.status(404).json({ error: { code: "NOT_FOUND_404", message: "Unknown session." } });
-      return;
-    }
-    await session.transport.handleRequest(req, res);
+  app.delete("/mcp", requireBearerAuth, (_req, res) => {
+    res
+      .status(405)
+      .set("Allow", "POST")
+      .json({ error: { code: "METHOD_NOT_ALLOWED", message: "Stateless mode has no sessions to delete." } });
   });
 
   app.listen(PORT, () => {
