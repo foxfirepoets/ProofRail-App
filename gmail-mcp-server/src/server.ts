@@ -332,12 +332,22 @@ async function main() {
   app.post('/mcp', requireBearerAuth, async (req, res) => {
     const server = buildMcpServer(toolset);
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    // server.close() already cascades to transport.close() internally (SDK's Protocol.close()) -
+    // closing the transport too would just be a redundant no-op. Catch rather than let a rejection
+    // here become an unhandled promise rejection, which crashes the whole process (no global
+    // handler exists) and would take down every other concurrent request, not just this one.
     res.on('close', () => {
-      void transport.close();
-      void server.close();
+      server.close().catch((error) => logger.error('Error closing MCP server after request:', error as Error));
     });
-    await server.connect(transport);
-    await transport.handleRequest(req, res, req.body);
+    try {
+      await server.connect(transport);
+      await transport.handleRequest(req, res, req.body);
+    } catch (error) {
+      logger.error('Error handling MCP request:', error as Error);
+      if (!res.headersSent) {
+        res.status(500).json({ jsonrpc: '2.0', error: { code: -32603, message: 'Internal server error' }, id: null });
+      }
+    }
   });
 
   app.delete('/mcp', requireBearerAuth, (_req, res) => {

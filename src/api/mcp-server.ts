@@ -534,12 +534,32 @@ export function startMcpServer(): void {
   app.post("/mcp", requireBearerAuth, async (req, res) => {
     const server = buildServer();
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    // server.close() already cascades to transport.close() internally (SDK's Protocol.close()) -
+    // closing the transport too would just be a redundant no-op. Catch rather than let a rejection
+    // here become an unhandled promise rejection, which crashes the whole process (no global
+    // handler exists) and would take down every other concurrent request, not just this one.
     res.on("close", () => {
-      void transport.close();
-      void server.close();
+      // server.close()'s ambient type is Promise<void> | void (see mcp-sdk-shim.d.ts) -
+      // Promise.resolve() normalizes either shape so .catch() is always safe to call.
+      Promise.resolve(server.close()).catch((error: unknown) => {
+        // eslint-disable-next-line no-console
+        console.error("Error closing MCP server after request:", error);
+      });
     });
-    await server.connect(transport);
-    await transport.handleRequest(req, res, req.body);
+    try {
+      await server.connect(transport);
+      await transport.handleRequest(req, res, req.body);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("Error handling MCP request:", error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          jsonrpc: "2.0",
+          error: { code: -32603, message: "Internal server error" },
+          id: null,
+        });
+      }
+    }
   });
 
   app.delete("/mcp", requireBearerAuth, (_req, res) => {
