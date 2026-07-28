@@ -243,14 +243,29 @@ function purposeKey(purpose: string): Buffer {
   return createHmac("sha256", MCP_KEY!).update(purpose).digest();
 }
 
+// Plain !== on PKCE/secret-shaped strings is a timing side-channel (pre-existing pattern in this
+// file, carried over unchanged from the old Map-based code - fixing it here since this function is
+// already being touched). Length-check first because timingSafeEqual throws on mismatched lengths.
+function timingSafeStringEqual(a: string, b: string): boolean {
+  const aBuf = Buffer.from(a, "utf8");
+  const bBuf = Buffer.from(b, "utf8");
+  return aBuf.length === bBuf.length && timingSafeEqual(aBuf, bBuf);
+}
+
 function signStatelessToken(purpose: string, payload: Record<string, unknown>, ttlMs: number): string {
   const body = Buffer.from(JSON.stringify({ ...payload, exp: Date.now() + ttlMs }), "utf8").toString("base64url");
   const sig = createHmac("sha256", purposeKey(purpose)).update(body).digest("base64url");
   return `${body}.${sig}`;
 }
 
-function verifyStatelessToken<T extends { exp: number }>(purpose: string, token: string | undefined): T | undefined {
-  if (!token) return undefined;
+function verifyStatelessToken<T extends { exp: number }>(purpose: string, token: unknown): T | undefined {
+  // Callers type `token` as `string | undefined` (e.g. `req.query as Record<string, string | undefined>`),
+  // but that's a compile-time claim, not a runtime guarantee: Express's default query parser ('extended',
+  // the qs library) turns bracket-notation params like ?state[x]=1 into a plain object at runtime. Without
+  // this check, token.indexOf below throws on a non-string, and since some callers are async route
+  // handlers, that throw becomes an unhandled promise rejection - fatal here, since neither app registers
+  // a global unhandledRejection handler.
+  if (typeof token !== "string" || !token) return undefined;
   const dot = token.indexOf(".");
   if (dot < 0) return undefined;
   const body = token.slice(0, dot);
@@ -383,7 +398,7 @@ export function startMcpServer(): void {
         const verifier = body.code_verifier ?? "";
         const computed =
           entry.codeChallengeMethod === "plain" ? verifier : createHash("sha256").update(verifier).digest("base64url");
-        if (computed !== entry.codeChallenge) {
+        if (!timingSafeStringEqual(computed, entry.codeChallenge)) {
           res.status(400).json({ error: "invalid_grant", error_description: "PKCE verification failed" });
           return;
         }
@@ -487,69 +502,80 @@ export function startMcpServer(): void {
   // started for, and stores the token pair in proofrail_qbo_token_store - never in this app's
   // response, logs, or any file.
   app.get("/auth/qbo/callback", async (req, res) => {
-    const configError = qboConfigError();
-    if (configError) {
-      res.status(501).send(`QBO OAuth not configured: ${configError}`);
-      return;
-    }
-    const { code, realmId, state, error, error_description } = req.query as Record<string, string | undefined>;
-    if (error) {
-      res.status(400).send(`Intuit returned an error: ${error} - ${error_description ?? "no description"}. Nothing was stored.`);
-      return;
-    }
-    const entry = verifyStatelessToken<QboAuthStatePayload>("qbo_state", state);
-    if (!entry) {
-      res.status(400).send("invalid_state: this consent flow expired or was never started via /auth/qbo/start. Nothing was stored.");
-      return;
-    }
-    if (!code || !realmId) {
-      res.status(400).send("invalid_request: Intuit's callback is missing code or realmId. Nothing was stored.");
-      return;
-    }
-    const expectedRealmId = QBO_REALM_IDS[entry.realm];
-    if (realmId !== expectedRealmId) {
-      // Doc section 2 step 4: wrong company was authorized - refuse to store, tell Ben plainly.
-      res.status(400).send(
-        `realmId mismatch: Intuit returned realmId ${realmId}, but QBO_REALM_${entry.realm} is configured as ` +
-          `${expectedRealmId}. This means the wrong sandbox company was approved during login. Nothing was ` +
-          `stored - redo /auth/qbo/start?realm=${entry.realm} and make sure to log into the correct sandbox company.`,
-      );
-      return;
-    }
-
+    // Outer try/catch: this route is unauthenticated by necessity (it's Intuit's public redirect
+    // target), so any uncaught throw here - not just in the fetch below - would otherwise become an
+    // unhandled promise rejection (async handler, no global unhandledRejection handler in this app)
+    // and crash the whole process for every concurrent user. verifyStatelessToken already guards its
+    // own input type, but this is defense-in-depth against anything else in this section throwing.
     try {
-      const basic = Buffer.from(`${QBO_CLIENT_ID}:${QBO_CLIENT_SECRET}`).toString("base64");
-      const tokenRes = await fetch("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer", {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${basic}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-          Accept: "application/json",
-        },
-        body: new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: entry.redirectUri }),
-      });
-      if (!tokenRes.ok) {
-        res.status(502).send(`Intuit token exchange failed: HTTP ${tokenRes.status} - ${await tokenRes.text()}. Nothing was stored.`);
+      const configError = qboConfigError();
+      if (configError) {
+        res.status(501).send(`QBO OAuth not configured: ${configError}`);
         return;
       }
-      const tok = (await tokenRes.json()) as { access_token: string; refresh_token: string; expires_in: number };
-      await qboTokenStore!.seed({
-        realm: entry.realm,
-        realmId,
-        refreshToken: tok.refresh_token,
-        accessToken: tok.access_token,
-        accessExpiresAt: new Date(Date.now() + (tok.expires_in - 120) * 1000),
-      });
-      res
-        .status(200)
-        .type("text/plain")
-        .send(
-          `QBO Realm ${entry.realm} connected. realmId ${realmId} authorized and stored in ` +
-            `proofrail_qbo_token_store. Tokens are not shown here or in any log. ` +
-            `${entry.realm === "A" ? "Now run /auth/qbo/start?realm=B for the other realm." : "Both realms should now be connected - verify with a read from proofrail_qbo_token_store."}`,
+      const { code, realmId, state, error, error_description } = req.query as Record<string, string | undefined>;
+      if (error) {
+        res.status(400).send(`Intuit returned an error: ${error} - ${error_description ?? "no description"}. Nothing was stored.`);
+        return;
+      }
+      const entry = verifyStatelessToken<QboAuthStatePayload>("qbo_state", state);
+      if (!entry) {
+        res.status(400).send("invalid_state: this consent flow expired or was never started via /auth/qbo/start. Nothing was stored.");
+        return;
+      }
+      if (!code || !realmId) {
+        res.status(400).send("invalid_request: Intuit's callback is missing code or realmId. Nothing was stored.");
+        return;
+      }
+      const expectedRealmId = QBO_REALM_IDS[entry.realm];
+      if (realmId !== expectedRealmId) {
+        // Doc section 2 step 4: wrong company was authorized - refuse to store, tell Ben plainly.
+        res.status(400).send(
+          `realmId mismatch: Intuit returned realmId ${realmId}, but QBO_REALM_${entry.realm} is configured as ` +
+            `${expectedRealmId}. This means the wrong sandbox company was approved during login. Nothing was ` +
+            `stored - redo /auth/qbo/start?realm=${entry.realm} and make sure to log into the correct sandbox company.`,
         );
+        return;
+      }
+
+      try {
+        const basic = Buffer.from(`${QBO_CLIENT_ID}:${QBO_CLIENT_SECRET}`).toString("base64");
+        const tokenRes = await fetch("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer", {
+          method: "POST",
+          headers: {
+            Authorization: `Basic ${basic}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+            Accept: "application/json",
+          },
+          body: new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: entry.redirectUri }),
+        });
+        if (!tokenRes.ok) {
+          res.status(502).send(`Intuit token exchange failed: HTTP ${tokenRes.status} - ${await tokenRes.text()}. Nothing was stored.`);
+          return;
+        }
+        const tok = (await tokenRes.json()) as { access_token: string; refresh_token: string; expires_in: number };
+        await qboTokenStore!.seed({
+          realm: entry.realm,
+          realmId,
+          refreshToken: tok.refresh_token,
+          accessToken: tok.access_token,
+          accessExpiresAt: new Date(Date.now() + (tok.expires_in - 120) * 1000),
+        });
+        res
+          .status(200)
+          .type("text/plain")
+          .send(
+            `QBO Realm ${entry.realm} connected. realmId ${realmId} authorized and stored in ` +
+              `proofrail_qbo_token_store. Tokens are not shown here or in any log. ` +
+              `${entry.realm === "A" ? "Now run /auth/qbo/start?realm=B for the other realm." : "Both realms should now be connected - verify with a read from proofrail_qbo_token_store."}`,
+          );
+      } catch (err) {
+        res.status(500).send(`QBO token exchange threw: ${err instanceof Error ? err.message : String(err)}. Nothing was stored.`);
+      }
     } catch (err) {
-      res.status(500).send(`QBO token exchange threw: ${err instanceof Error ? err.message : String(err)}. Nothing was stored.`);
+      if (!res.headersSent) {
+        res.status(500).send(`Unexpected error handling QBO callback: ${err instanceof Error ? err.message : String(err)}. Nothing was stored.`);
+      }
     }
   });
 

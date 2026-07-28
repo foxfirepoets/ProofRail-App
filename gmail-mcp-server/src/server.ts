@@ -193,14 +193,29 @@ function purposeKey(purpose: string): Buffer {
   return createHmac('sha256', MCP_KEY!).update(purpose).digest();
 }
 
+// Plain !== on PKCE/secret-shaped strings is a timing side-channel (pre-existing pattern in this
+// file, carried over unchanged from the old Map-based code - fixing it here since this function is
+// already being touched). Length-check first because timingSafeEqual throws on mismatched lengths.
+function timingSafeStringEqual(a: string, b: string): boolean {
+  const aBuf = Buffer.from(a, 'utf8');
+  const bBuf = Buffer.from(b, 'utf8');
+  return aBuf.length === bBuf.length && timingSafeEqual(aBuf, bBuf);
+}
+
 function signStatelessToken(purpose: string, payload: Record<string, unknown>, ttlMs: number): string {
   const body = Buffer.from(JSON.stringify({ ...payload, exp: Date.now() + ttlMs }), 'utf8').toString('base64url');
   const sig = createHmac('sha256', purposeKey(purpose)).update(body).digest('base64url');
   return `${body}.${sig}`;
 }
 
-function verifyStatelessToken<T extends { exp: number }>(purpose: string, token: string | undefined): T | undefined {
-  if (!token) return undefined;
+function verifyStatelessToken<T extends { exp: number }>(purpose: string, token: unknown): T | undefined {
+  // Callers type `token` as `string | undefined` (e.g. `req.body as Record<string, string | undefined>`),
+  // but that's a compile-time claim, not a runtime guarantee. This function has no query-sourced call site
+  // today (only /oauth/token's body.code, parsed with extended:false - safe from object injection), but
+  // guard here anyway so a future call site reading from req.query can't silently reintroduce the same
+  // crash proofrail-mcp had (an object-shaped param throwing inside token.indexOf, fatal in an async
+  // handler since neither app registers a global unhandledRejection handler).
+  if (typeof token !== 'string' || !token) return undefined;
   const dot = token.indexOf('.');
   if (dot < 0) return undefined;
   const body = token.slice(0, dot);
@@ -330,7 +345,7 @@ async function main() {
         const verifier = body.code_verifier ?? '';
         const computed =
           entry.codeChallengeMethod === 'plain' ? verifier : createHash('sha256').update(verifier).digest('base64url');
-        if (computed !== entry.codeChallenge) {
+        if (!timingSafeStringEqual(computed, entry.codeChallenge)) {
           res.status(400).json({ error: 'invalid_grant', error_description: 'PKCE verification failed' });
           return;
         }
