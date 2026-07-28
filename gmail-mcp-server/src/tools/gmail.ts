@@ -1001,7 +1001,7 @@ export class GmailTools {
     }
   }
 
-  private async getAttachment(args: Record<string, any>): Promise<Array<TextContent>> {
+  private async getAttachment(args: Record<string, any>): Promise<Array<TextContent | EmbeddedResource>> {
     const userId = args[USER_ID_ARG];
     const messageId = args.message_id;
     const attachmentId = args.attachment_id;
@@ -1047,9 +1047,16 @@ export class GmailTools {
           text: `Attachment saved to ${validatedPath}`
         }];
       } else {
+        // Binary-safe: attachments (PDFs, images, etc.) are not valid UTF-8, so decoding them
+        // as a UTF-8 string (the previous behavior) replaced non-UTF-8 byte sequences with
+        // U+FFFD, corrupting the file. Base64 round-trips exactly regardless of content.
         return [{
-          type: 'text',
-          text: decodedBuffer.toString('utf-8')
+          type: 'resource',
+          resource: {
+            uri: `gmail://${userId}/messages/${messageId}/attachments/${attachmentId}`,
+            mimeType,
+            blob: decodedBuffer.toString('base64')
+          }
         }];
       }
     } catch (error) {
